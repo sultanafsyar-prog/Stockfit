@@ -78,6 +78,14 @@ const translations = {
     TO: 'To',
     PIECES: 'Pieces',
     OP: 'Op',
+    RACK_OVERVIEW: 'Rack Overview',
+    RACKS_FILLED: 'racks filled',
+    EMPTY: 'EMPTY',
+    DIST_STOCK_BUILDING: 'Stock Distribution / Building',
+    TREND_IN_OUT: 'IN vs OUT Trend (7 Days)',
+    BLDG: 'Bldg',
+    SPK_ACTIVE: 'active SPK',
+    TOTAL_RACKS: 'total racks',
   },
   id: {
     LOGIN: 'LOGIN',
@@ -220,6 +228,14 @@ const translations = {
     TO: '至',
     PIECES: '件',
     OP: '操作',
+    RACK_OVERVIEW: 'Ikhtisar Rak',
+    RACKS_FILLED: 'rak terisi',
+    EMPTY: 'KOSONG',
+    DIST_STOCK_BUILDING: 'Distribusi Stock / Building',
+    TREND_IN_OUT: 'Tren IN vs OUT (7 Hari)',
+    BLDG: 'Bldg',
+    SPK_ACTIVE: 'SPK aktif',
+    TOTAL_RACKS: 'total rak',
   },
   vi: {
     LOGIN: 'ĐĂNG NHẬP',
@@ -362,6 +378,14 @@ const translations = {
     TO: 'ឆ្ពោះទៅ',
     PIECES: 'ធាតុ',
     OP: 'NV',
+    RACK_OVERVIEW: '貨架總覽',
+    RACKS_FILLED: '架已使用',
+    EMPTY: '空架',
+    DIST_STOCK_BUILDING: '庫存分佈 / 棟別',
+    TREND_IN_OUT: '進出貨趨勢（7天）',
+    BLDG: '棟',
+    SPK_ACTIVE: '個有效SPK',
+    TOTAL_RACKS: '個架位',
   },
   th: {
     LOGIN: 'เข้าสู่ระบบ',
@@ -410,7 +434,7 @@ const translations = {
     XFD_PASSED: 'XFD หมดอายุแล้ว!',
     XFD_DAYS_LEFT: 'XFD เหลือ',
     DAYS: 'วัน',
-    SUPERMARKET_SYSTEM: 'ระบบสーเปอร์มาร์เก็ตดิจิทัล',
+    SUPERMARKET_SYSTEM: 'ระบบสีเปอร์มาร์เก็ตดิจิทัล',
     PT_DIAMOND: 'บริษัท เพชรนานาชาติ อินโดนีเซีย',
     CHOOSE_STOCKFIT: 'เลือก Stockfit Line / ผู้จัดส่ง',
     LANGUAGE: 'ภาษา',
@@ -441,32 +465,50 @@ const translations = {
 // ======================
 const themes = {
   dark: {
-    bg: '#0d1117',
-    bgSecondary: '#161b22',
-    bgTertiary: '#1c2128',
-    border: '#30363d',
-    text: '#c9d1d9',
-    textMuted: '#8b949e',
-    primary: '#58a6ff',
-    success: '#3fb950',
-    danger: '#f85149',
-    warning: '#ffb829',
-    blue: '#1f6feb',
-    purple: '#6818fb',
+    bg: '#0a0e1a',
+    bgSecondary: '#111827',
+    bgTertiary: '#1a2235',
+    border: '#1e2d45',
+    borderAccent: '#2a3f5f',
+    text: '#e2e8f0',
+    textMuted: '#64748b',
+    textSoft: '#94a3b8',
+    primary: '#38bdf8',
+    primaryGlow: 'rgba(56,189,248,0.15)',
+    success: '#34d399',
+    successGlow: 'rgba(52,211,153,0.15)',
+    danger: '#f87171',
+    dangerGlow: 'rgba(248,113,113,0.15)',
+    warning: '#fbbf24',
+    warningGlow: 'rgba(251,191,36,0.15)',
+    blue: '#3b82f6',
+    blueGlow: 'rgba(59,130,246,0.2)',
+    purple: '#8b5cf6',
+    purpleGlow: 'rgba(139,92,246,0.2)',
+    navBg: 'rgba(17,24,39,0.95)',
   },
   light: {
-    bg: '#ffffff',
-    bgSecondary: '#f6f8fa',
-    bgTertiary: '#eaeef2',
-    border: '#d0d7de',
-    text: '#24292f',
-    textMuted: '#57606a',
-    primary: '#0969da',
-    success: '#1a7f0f',
-    danger: '#cf222e',
-    warning: '#9e6a03',
-    blue: '#0969da',
-    purple: '#8250df',
+    bg: '#f0f4f8',
+    bgSecondary: '#ffffff',
+    bgTertiary: '#f8fafc',
+    border: '#e2e8f0',
+    borderAccent: '#cbd5e1',
+    text: '#0f172a',
+    textMuted: '#64748b',
+    textSoft: '#94a3b8',
+    primary: '#0284c7',
+    primaryGlow: 'rgba(2,132,199,0.1)',
+    success: '#059669',
+    successGlow: 'rgba(5,150,105,0.1)',
+    danger: '#dc2626',
+    dangerGlow: 'rgba(220,38,38,0.1)',
+    warning: '#d97706',
+    warningGlow: 'rgba(217,119,6,0.1)',
+    blue: '#2563eb',
+    blueGlow: 'rgba(37,99,235,0.15)',
+    purple: '#7c3aed',
+    purpleGlow: 'rgba(124,58,237,0.15)',
+    navBg: 'rgba(255,255,255,0.95)',
   }
 };
 
@@ -486,6 +528,78 @@ const formatRakDisplay = (rak) => {
 };
 const DAFTAR_STOCKFIT = ["BUFFING", "PT WENCHUANG", "PT GLOBAL", "STOCKFIT 1", "STOCKFIT 2", "STOCKFIT 3", "STOCKFIT 4", "STOCKFIT 5", "STOCKFIT 6", "STOCKFIT 7"];
 
+// =========================================
+// GLOBAL STYLES injected once
+// =========================================
+const GlobalStyles = () => {
+  useEffect(() => {
+    const id = 'sds-global-styles';
+    if (document.getElementById(id)) return;
+    const style = document.createElement('style');
+    style.id = id;
+    style.textContent = `
+      @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&family=Hanuman:wght@400;700&family=Noto+Sans+Khmer:wght@400;700&family=Noto+Sans+Thai:wght@400;700&family=Noto+Sans+TC:wght@400;700&display=swap');
+
+      *, *::before, *::after { box-sizing: border-box; }
+
+      ::-webkit-scrollbar { width: 5px; height: 5px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background: rgba(100,116,139,0.4); border-radius: 10px; }
+      ::-webkit-scrollbar-thumb:hover { background: rgba(100,116,139,0.7); }
+
+      @keyframes fadeSlideIn {
+        from { opacity: 0; transform: translateY(8px); }
+        to   { opacity: 1; transform: translateY(0); }
+      }
+      @keyframes pulseGlow {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50%       { opacity: 0.6; transform: scale(1.05); }
+      }
+      @keyframes xfdBlink {
+        0%, 100% { opacity: 1; box-shadow: 0 0 6px currentColor; }
+        50%       { opacity: 0.7; box-shadow: none; }
+      }
+      @keyframes spinDot {
+        to { transform: rotate(360deg); }
+      }
+
+      .sds-btn {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 7px 14px; border: none; border-radius: 8px;
+        font-family: inherit; font-size: 12px; font-weight: 600;
+        letter-spacing: 0.3px; cursor: pointer; white-space: nowrap;
+        transition: all 0.18s ease; color: #fff;
+      }
+      .sds-btn:hover { transform: translateY(-1px); filter: brightness(1.12); }
+      .sds-btn:active { transform: translateY(0); filter: brightness(0.95); }
+
+      .sds-input {
+        padding: 10px 13px; border-radius: 8px;
+        font-family: inherit; font-size: 13px;
+        outline: none; width: 100%; transition: border-color 0.2s, box-shadow 0.2s;
+      }
+      .sds-input:focus { outline: none; }
+
+      .sds-card {
+        border-radius: 14px; border: 1px solid;
+        animation: fadeSlideIn 0.3s ease;
+      }
+
+      .rack-item:hover {
+        transform: translateY(-1px);
+        transition: transform 0.15s ease;
+      }
+
+      .spk-row:hover { opacity: 0.85; }
+
+      input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.6) brightness(1.5); cursor: pointer; }
+      input[type="date"] { color-scheme: dark; }
+    `;
+    document.head.appendChild(style);
+  }, []);
+  return null;
+};
+
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(pb.authStore.isValid);
   const [loginEmail, setLoginEmail] = useState('');
@@ -498,31 +612,30 @@ function App() {
   const [searchTerm, setSearchTerm] = useState('');
   const [tvSearch, setTvSearch] = useState('');
   const [showExportModal, setShowExportModal] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [language, setLanguage] = useState(() => localStorage.getItem('language') || 'id');
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
   const [currentTime, setCurrentTime] = useState(new Date());
 
-  // Helper function to get translation
   const t = (key) => translations[language]?.[key] || key;
-
-  // Get current theme colors
   const colors = themes[theme];
 
-  // Save preferences to localStorage
-  useEffect(() => {
-    localStorage.setItem('language', language);
-  }, [language]);
+  // Font per bahasa agar aksara render benar
+  const langFont = {
+    'km': "'Noto Sans Khmer', 'Hanuman', sans-serif",
+    'th': "'Noto Sans Thai', sans-serif",
+    'zh-TW': "'Noto Sans TC', sans-serif",
+  };
+  const fontFamily = langFont[language] || "'DM Sans', sans-serif";
 
-  useEffect(() => {
-    localStorage.setItem('theme', theme);
-  }, [theme]);
+  useEffect(() => { localStorage.setItem('language', language); }, [language]);
+  useEffect(() => { localStorage.setItem('theme', theme); }, [theme]);
 
   const [formData, setFormData] = useState({
     spk_number: '', style_name: '', qty: 0, target_qty: 0,
     xfd_date: '', type: 'IN', source_from: '', destination: '', rack: ''
   });
 
-  // Ambil tanggal hari ini dalam format DD-MM-YYYY untuk filter statistik
   const todayStr = new Date().toLocaleDateString('id-ID').replace(/\//g, '-');
 
   const fetchData = useCallback(async () => {
@@ -531,7 +644,6 @@ function App() {
       const res = await pb.collection('upper_stock').getList(1, 50, { sort: '-created', requestKey: null });
       setRawRecords(res.items);
       const allRecords = await pb.collection('upper_stock').getFullList({ sort: 'created', requestKey: null });
-      
       const summary = allRecords.reduce((acc, curr) => {
         const key = `${curr.spk_number}-${curr.rack_location}`;
         if (!acc[key]) {
@@ -554,14 +666,10 @@ function App() {
         if (Number(curr.target_qty) > 0) acc[key].target = Number(curr.target_qty);
         return acc;
       }, {});
-
-      // Compute balance as: order_qty - total_input, but never negative
       const inventoryWithBalance = Object.values(summary).map(item => ({
         ...item,
-        // balance = ORDER QTY - TOTAL INPUT
         balance: Math.max(0, (Number(item.target) || 0) - (Number(item.total_input) || 0))
       })).filter(i => i.stock > 0);
-
       setInventory(inventoryWithBalance);
     } catch (error) { console.error("Sync Error"); }
   }, [isLoggedIn]);
@@ -570,7 +678,6 @@ function App() {
     if (isLoggedIn) {
       fetchData();
       const unsub = pb.collection('upper_stock').subscribe('*', () => fetchData());
-      // `subscribe` returns an unsubscribe function (not a promise)
       return () => { if (typeof unsub === 'function') unsub(); };
     }
   }, [fetchData, isLoggedIn]);
@@ -582,71 +689,39 @@ function App() {
 
   const handleItemClick = (item) => {
     if (viewMode !== 'ADMIN') return;
-    setFormData({
-      ...formData,
-      type: 'OUT',
-      spk_number: item.spk,
-      style_name: item.style,
-      target_qty: item.target,
-      xfd_date: item.xfd,
-      source_from: item.source,
-      destination: item.destination,
-      rack: item.rack,
-      qty: item.stock 
-    });
+    setFormData({ ...formData, type: 'OUT', spk_number: item.spk, style_name: item.style, target_qty: item.target, xfd_date: item.xfd, source_from: item.source, destination: item.destination, rack: item.rack, qty: item.stock });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isSubmitting) return;
-    // business rule: once balance reaches zero we shouldn't add more input
     if (formData.type === 'IN') {
-      // try to find existing inventory entry for this spk/rack
       const existing = inventory.find(i => i.spk === formData.spk_number && i.rack === formData.rack);
       const qtyWanted = Number(formData.qty) || 0;
-      // determine the relevant target (new one if provided, otherwise existing)
       const newTarget = Number(formData.target_qty) > 0 ? Number(formData.target_qty) : (existing ? existing.target : 0);
       if (existing) {
         const projectedTotalInput = (existing.total_input || 0) + qtyWanted;
         const projectedBalance = newTarget - projectedTotalInput;
-        if (existing.balance <= 0 && newTarget === existing.target) {
-          alert(t('BALANCE_ZERO'));
-          return;
-        }
-        if (projectedBalance < 0) {
-          alert(`${t('QTY_EXCEED')} (${existing.balance}).`);
-          return;
-        }
+        if (existing.balance <= 0 && newTarget === existing.target) { alert(t('BALANCE_ZERO')); return; }
+        if (projectedBalance < 0) { alert(`${t('QTY_EXCEED')} (${existing.balance}).`); return; }
       }
     }
-
-    // VALIDASI: Qty single entry tidak boleh melebihi order
     if (formData.target_qty && Number(formData.qty) > Number(formData.target_qty)) {
-      alert(`${t('QTY_EXCEED_ORDER')} (${formData.target_qty})`);
-      return;
+      alert(`${t('QTY_EXCEED_ORDER')} (${formData.target_qty})`); return;
     }
-    // VALIDASI: Total cumulative input untuk SPK+rack tidak boleh melebihi order
     if (formData.type === 'IN' && formData.target_qty) {
-      // hitung input sebelumnya dari catatan mentah
-      const prevInput = rawRecords
-        .filter(r => r.spk_number === formData.spk_number && r.rack_location === formData.rack)
-        .reduce((sum, r) => sum + (Number(r.qty_in) || 0), 0);
+      const prevInput = rawRecords.filter(r => r.spk_number === formData.spk_number && r.rack_location === formData.rack).reduce((sum, r) => sum + (Number(r.qty_in) || 0), 0);
       if (prevInput + Number(formData.qty) > Number(formData.target_qty)) {
-        alert(`${t('TOTAL_EXCEED_ORDER')} (${prevInput + Number(formData.qty)}) ${t('ORDER').toLowerCase()} (${formData.target_qty})`);
-        return;
+        alert(`${t('TOTAL_EXCEED_ORDER')} (${prevInput + Number(formData.qty)}) ${t('ORDER').toLowerCase()} (${formData.target_qty})`); return;
       }
     }
-
-    // VALIDASI: Cek sisa stok sebelum OUT
     if (formData.type === 'OUT') {
       const currentItem = inventory.find(i => i.spk === formData.spk_number && i.rack === formData.rack);
       const stockTersedia = currentItem ? currentItem.stock : 0;
       if (Number(formData.qty) > stockTersedia) {
-        alert(`${t('INSUFFICIENT_STOCK')}\n${t('AVAILABLE_STACK')}: ${stockTersedia} ${t('PIECES')}.\n${t('YOUR_INPUT')}: ${formData.qty} ${t('PIECES')}.`);
-        return;
+        alert(`${t('INSUFFICIENT_STOCK')}\n${t('AVAILABLE_STACK')}: ${stockTersedia} ${t('PIECES')}.\n${t('YOUR_INPUT')}: ${formData.qty} ${t('PIECES')}.`); return;
       }
     }
-
     setIsSubmitting(true);
     const waktu = `${todayStr} ${new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}`;
     try {
@@ -663,9 +738,7 @@ function App() {
         waktu_input: waktu,
         operator: pb.authStore.model.username
       });
-      // refresh so UI updates (items with stock <= 0 are filtered out)
       await fetchData();
-      // silently clear the form
       setFormData({ ...formData, spk_number: '', style_name: '', qty: 0, target_qty: 0, xfd_date: '', source_from: '', destination: '' });
     } catch (err) { alert(t('FAILED')); } finally { setIsSubmitting(false); }
   };
@@ -683,7 +756,6 @@ function App() {
 
   const exportToXlsx = (rows, fileName) => {
     if (fileName === 'Summary_Stok') {
-      // rows are inventory summary entries; map to friendly headers
       const mapped = rows.map(r => ({
         [t('SPK')]: r.spk || '',
         [t('STYLE')]: r.style || '',
@@ -704,8 +776,6 @@ function App() {
       XLSX.writeFile(wb, `${fileName}.xlsx`);
       return;
     }
-
-    // default: Log_Transaksi or raw rows
     const processedRows = rows.map(row => ({
       Tanggal: row.waktu_input ? row.waktu_input.split(' ')[0] : '',
       Waktu: row.waktu_input ? row.waktu_input.split(' ')[1] : '',
@@ -714,10 +784,7 @@ function App() {
     }));
     const filteredRows = processedRows.map(row => {
       const { collectionId, collectionName, waktu_input, ...rest } = row;
-      if (rest.target_qty !== undefined) {
-        rest.order_qty = rest.target_qty;
-        delete rest.target_qty;
-      }
+      if (rest.target_qty !== undefined) { rest.order_qty = rest.target_qty; delete rest.target_qty; }
       return rest;
     });
     const ws = XLSX.utils.json_to_sheet(filteredRows);
@@ -726,311 +793,689 @@ function App() {
     XLSX.writeFile(wb, `${fileName}.xlsx`);
   };
 
+  // ========================
+  // INPUT STYLE HELPERS
+  // ========================
+  const inputStyle = {
+    padding: '10px 13px', borderRadius: '8px',
+    border: `1px solid ${colors.border}`,
+    background: colors.bgTertiary,
+    color: colors.text, fontSize: '13px',
+    outline: 'none', width: '100%',
+    fontFamily: "'DM Sans', sans-serif",
+    transition: 'border-color 0.2s, box-shadow 0.2s',
+  };
+  const inputFocusProps = {
+    onFocus: e => { e.target.style.borderColor = colors.primary; e.target.style.boxShadow = `0 0 0 3px ${colors.primaryGlow}`; },
+    onBlur:  e => { e.target.style.borderColor = colors.border;  e.target.style.boxShadow = 'none'; }
+  };
+
+  // ========================
+  // LOGIN PAGE
+  // ========================
   if (!isLoggedIn) return (
-    <div style={{...s.overlay(colors), background: colors.bg}}>
-      <div style={{...s.card(colors), width: '350px', border: `1px solid ${colors.border}`}}>
-        <h2 style={{color: colors.primary, marginBottom: '5px'}}>{t('LOGIN')}</h2>
-        <div style={{fontSize: '10px', color: colors.textMuted, marginBottom: '20px'}}>{t('THIRD_AXIS')}</div>
-        <form onSubmit={handleLogin} style={{display:'flex', flexDirection:'column', gap:15}}>
-          <input style={s.darkInput(colors)} type="email" placeholder={t('EMAIL')} onChange={e => setLoginEmail(e.target.value)} required />
-          <input style={s.darkInput(colors)} type="password" placeholder={t('PASSWORD')} onChange={e => setLoginPassword(e.target.value)} required />
-          <button type="submit" style={{...s.btn(colors), background: colors.success}}>{loading ? t('PROCESSING') : t('LOGIN')}</button>
+    <div style={{ minHeight: '100vh', background: colors.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: fontFamily, position: 'relative', overflow: 'hidden' }}>
+      <GlobalStyles />
+      {/* Background decoration */}
+      <div style={{ position: 'absolute', width: 400, height: 400, borderRadius: '50%', background: `radial-gradient(circle, ${colors.primaryGlow} 0%, transparent 70%)`, top: '-100px', right: '-100px', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', width: 300, height: 300, borderRadius: '50%', background: `radial-gradient(circle, ${colors.purpleGlow} 0%, transparent 70%)`, bottom: '-80px', left: '-80px', pointerEvents: 'none' }} />
+
+      <div style={{ background: colors.bgSecondary, border: `1px solid ${colors.border}`, borderRadius: '20px', padding: '40px', width: '380px', position: 'relative', boxShadow: theme === 'dark' ? '0 25px 60px rgba(0,0,0,0.5)' : '0 25px 60px rgba(0,0,0,0.12)', animation: 'fadeSlideIn 0.4s ease' }}>
+        {/* Logo area */}
+        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 56, height: 56, borderRadius: '16px', background: `linear-gradient(135deg, ${colors.primary}, ${colors.blue})`, marginBottom: '16px', boxShadow: `0 8px 24px ${colors.blueGlow}` }}>
+            <img src="/logo.png" alt="Logo" style={{ width: 32, height: 32, filter: 'brightness(0) invert(1)' }} onError={e => { e.target.style.display='none'; }} />
+          </div>
+          <h2 style={{ margin: 0, color: colors.text, fontSize: '22px', fontWeight: 700, letterSpacing: '-0.3px' }}>{t('SUPERMARKET_SYSTEM')}</h2>
+          <p style={{ margin: '6px 0 0', color: colors.textMuted, fontSize: '11px', letterSpacing: '1.5px', textTransform: 'uppercase' }}>{t('PT_DIAMOND')}</p>
+        </div>
+
+        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div>
+            <label style={{ fontSize: '11px', fontWeight: 600, color: colors.textMuted, letterSpacing: '0.8px', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>{t('EMAIL')}</label>
+            <input className="sds-input" style={{ ...inputStyle }} type="email" placeholder="you@example.com" onChange={e => setLoginEmail(e.target.value)} {...inputFocusProps} required />
+          </div>
+          <div>
+            <label style={{ fontSize: '11px', fontWeight: 600, color: colors.textMuted, letterSpacing: '0.8px', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>{t('PASSWORD')}</label>
+            <input className="sds-input" style={{ ...inputStyle }} type="password" placeholder="••••••••" onChange={e => setLoginPassword(e.target.value)} {...inputFocusProps} required />
+          </div>
+          <button type="submit" disabled={loading} style={{ marginTop: 8, padding: '12px', border: 'none', borderRadius: '10px', background: `linear-gradient(135deg, ${colors.primary}, ${colors.blue})`, color: '#fff', fontWeight: 700, fontSize: '14px', cursor: loading ? 'not-allowed' : 'pointer', fontFamily: "'DM Sans', sans-serif", letterSpacing: '0.5px', boxShadow: `0 4px 20px ${colors.blueGlow}`, opacity: loading ? 0.7 : 1, transition: 'all 0.2s' }}>
+            {loading ? t('PROCESSING') : t('LOGIN')}
+          </button>
         </form>
+
+        <div style={{ marginTop: '24px', textAlign: 'center', fontSize: '10px', color: colors.textMuted, letterSpacing: '1px' }}>{t('THIRD_AXIS')}</div>
       </div>
     </div>
   );
 
+  // ========================
+  // MAIN APP
+  // ========================
+  const entryToday = rawRecords.filter(r => r.qty_in > 0 && r.waktu_input.includes(todayStr)).reduce((a, b) => a + Number(b.qty_in), 0);
+  const exitToday = rawRecords.filter(r => r.qty_out > 0 && r.waktu_input.includes(todayStr)).reduce((a, b) => a + Number(b.qty_out), 0);
+  const globalStock = inventory.reduce((a, b) => a + b.stock, 0);
+
   return (
-    <div style={{ background: colors.bg, minHeight: '100vh', padding: '20px', color: colors.text, fontFamily: 'sans-serif', position: 'relative' }}>
-      
-      {/* WATERMARK NEON */}
-      <div style={{ 
-        position: 'fixed', bottom: '20px', left: '20px', fontSize: '11px', fontWeight: 'bold', 
-        color: colors.primary, letterSpacing: '3px', pointerEvents: 'none', zIndex: 9999, 
-        textTransform: 'uppercase', textShadow: `0 0 5px ${colors.primary}, 0 0 10px ${colors.primary}`, opacity: 0.8 
-      }}>
+    <div style={{ background: colors.bg, minHeight: '100vh', padding: '16px 20px 20px', color: colors.text, fontFamily: fontFamily, position: 'relative' }}>
+      <GlobalStyles />
+
+      {/* Watermark */}
+      <div style={{ position: 'fixed', bottom: '16px', left: '16px', fontSize: '9px', fontWeight: 700, color: colors.primary, letterSpacing: '2px', pointerEvents: 'none', zIndex: 9999, textTransform: 'uppercase', textShadow: `0 0 8px ${colors.primary}`, opacity: 0.6 }}>
         Third Axis Center
       </div>
 
-      <nav style={{ background: colors.bgSecondary, border: `1px solid ${colors.border}`, padding: '15px', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', marginBottom: '20px', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-        <div>
-          <h2 style={{ margin: 0, color: colors.primary, fontSize: '22px' }}><img src="/logo.png" alt="Supermarket Icon" style={{ width: '24px', height: '24px', marginRight: '8px' }} />{t('SUPERMARKET_SYSTEM')}</h2>
-          <div style={{fontSize: '9px', color: colors.textMuted, letterSpacing:'1px'}}>{t('PT_DIAMOND')}</div>
+      {/* ====== NAVBAR ====== */}
+      <nav style={{
+        background: colors.navBg,
+        backdropFilter: 'blur(12px)',
+        border: `1px solid ${colors.border}`,
+        padding: '10px 16px',
+        borderRadius: '14px',
+        display: 'flex',
+        justifyContent: 'space-between',
+        marginBottom: '20px',
+        alignItems: 'center',
+        flexWrap: 'wrap',
+        gap: '10px',
+        boxShadow: theme === 'dark' ? '0 4px 24px rgba(0,0,0,0.3)' : '0 4px 24px rgba(0,0,0,0.06)',
+        position: 'sticky', top: 12, zIndex: 100,
+      }}>
+        {/* Brand */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ width: 36, height: 36, borderRadius: '10px', background: `linear-gradient(135deg, ${colors.primary}, ${colors.blue})`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <img src="/logo.png" alt="Logo" style={{ width: 20, height: 20, filter: 'brightness(0) invert(1)' }} onError={e => { e.target.style.display='none'; }} />
+          </div>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: '14px', color: colors.text, letterSpacing: '-0.2px' }}>{t('SUPERMARKET_SYSTEM')}</div>
+            <div style={{ fontSize: '9px', color: colors.textMuted, letterSpacing: '1px', textTransform: 'uppercase' }}>{t('PT_DIAMOND')}</div>
+          </div>
         </div>
-        <div style={{display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap'}}>
-          <select value={language} onChange={(e) => setLanguage(e.target.value)} style={{...s.darkInput(colors), padding: '8px 10px', fontSize: '12px'}}>
-            <option value="id">🇮🇩 {t('LANGUAGE')}</option>
-            <option value="en">🇬🇧 English</option>
-            <option value="zh-TW">🇹🇼 繁體中文</option>
-            <option value="vi">🇻🇳 Tiếng Việt</option>
-            <option value="km">🇰🇭 ខ្មែរ</option>
-            <option value="th">🇹🇭 ไทย</option>
+
+        {/* Controls */}
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <select value={language} onChange={e => setLanguage(e.target.value)} style={{ ...inputStyle, width: 'auto', padding: '6px 10px', fontSize: '12px', cursor: 'pointer' }}>
+            <option value="id">🇮🇩 ID</option>
+            <option value="en">🇬🇧 EN</option>
+            <option value="zh-TW">🇹🇼 繁中</option>
+            <option value="vi">🇻🇳 VI</option>
+            <option value="km">🇰🇭 KM</option>
+            <option value="th">🇹🇭 TH</option>
           </select>
-          <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} style={{...s.btn(colors), background: colors.blue, padding: '8px 15px', fontSize: '12px'}}>
-            {theme === 'dark' ? '☀️ ' : '🌙 '}{t('THEME')}
+
+          <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="sds-btn" style={{ background: colors.bgTertiary, color: colors.textSoft, border: `1px solid ${colors.border}` }}>
+            {theme === 'dark' ? '☀️' : '🌙'} {t('THEME')}
           </button>
-          <button onClick={() => setViewMode(viewMode === 'ADMIN' ? 'TV' : 'ADMIN')} style={{ ...s.btn(colors), background: colors.purple, marginRight: 0 }}>{t('SWITCH_MODE')} {viewMode}</button>
-          <button onClick={() => setShowExportModal(true)} style={{ ...s.btn(colors), background: colors.success }}><img src="./Excell.png" alt="Export" width="15" height="15" style={{marginRight: '5px'}} />{t('DATA_EXPORT')}</button>
-          <button onClick={handleLogout} style={{ ...s.btn(colors), background: colors.danger }}>{t('LOGOUT')}</button>
+
+          {/* Mode badge */}
+          <div style={{ display: 'flex', background: colors.bgTertiary, border: `1px solid ${colors.border}`, borderRadius: 9, padding: 3, gap: 3 }}>
+            <button onClick={() => setViewMode('ADMIN')} style={{ padding: '5px 12px', borderRadius: 7, border: 'none', cursor: 'pointer', fontSize: '11px', fontWeight: 700, fontFamily: "'DM Sans', sans-serif", background: viewMode === 'ADMIN' ? colors.blue : 'transparent', color: viewMode === 'ADMIN' ? '#fff' : colors.textMuted, transition: 'all 0.2s' }}>ADMIN</button>
+            <button onClick={() => setViewMode('TV')} style={{ padding: '5px 12px', borderRadius: 7, border: 'none', cursor: 'pointer', fontSize: '11px', fontWeight: 700, fontFamily: "'DM Sans', sans-serif", background: viewMode === 'TV' ? colors.purple : 'transparent', color: viewMode === 'TV' ? '#fff' : colors.textMuted, transition: 'all 0.2s' }}>TV</button>
+          </div>
+
+          <button onClick={() => setShowExportModal(true)} className="sds-btn" style={{ background: colors.success, boxShadow: `0 2px 10px ${colors.successGlow}` }}>
+            📊 {t('DATA_EXPORT')}
+          </button>
+          <button onClick={handleLogout} className="sds-btn" style={{ background: colors.danger, boxShadow: `0 2px 10px ${colors.dangerGlow}` }}>
+            {t('LOGOUT')}
+          </button>
         </div>
       </nav>
 
+      {/* ====== ADMIN MODE ====== */}
       {viewMode === 'ADMIN' ? (
-        <div style={{ display: 'flex', gap: '20px' }}>
-          <div style={{ flex: 1, background: colors.bgSecondary, padding: '20px', borderRadius: '12px', border: `1px solid ${colors.border}` }}>
-            <h3 style={{color: colors.primary, marginTop: 0}}>{t('INPUT_TRANSACTION')}</h3>
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <div style={{display:'flex', gap:5}}>
-                <button type="button" onClick={() => setFormData({...formData, type:'IN'})} style={{flex:1, padding:10, background:formData.type==='IN'?colors.success:colors.bgTertiary, color:'white', border:'none', borderRadius:5, fontWeight:'bold'}}>{t('IN_ENTRY')}</button>
-                <button type="button" onClick={() => setFormData({...formData, type:'OUT'})} style={{flex:1, padding:10, background:formData.type==='OUT'?colors.danger:colors.bgTertiary, color:'white', border:'none', borderRadius:5, fontWeight:'bold'}}>{t('OUT_EXIT')}</button>
+        <div style={{ position: 'relative' }}>
+
+          {/* ── FAB Button: buka form drawer ── */}
+          <button
+            onClick={() => setDrawerOpen(true)}
+            style={{
+              position: 'fixed', bottom: 24, right: 24, zIndex: 500,
+              width: 56, height: 56, borderRadius: '50%', border: 'none',
+              background: `linear-gradient(135deg, ${colors.blue}, ${colors.primary})`,
+              color: '#fff', fontSize: 24, cursor: 'pointer',
+              boxShadow: `0 6px 24px ${colors.blueGlow}`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transition: 'transform 0.2s, box-shadow 0.2s',
+            }}
+            onMouseEnter={e => e.currentTarget.style.transform='scale(1.1)'}
+            onMouseLeave={e => e.currentTarget.style.transform='scale(1)'}
+          >+</button>
+
+          {/* ── DRAWER OVERLAY ── */}
+          {drawerOpen && (
+            <div
+              onClick={() => setDrawerOpen(false)}
+              style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(3px)', zIndex: 600 }}
+            />
+          )}
+
+          {/* ── DRAWER PANEL ── */}
+          <div style={{
+            position: 'fixed', top: 0, right: 0, bottom: 0, zIndex: 700,
+            width: 'min(360px, 92vw)',
+            background: colors.bgSecondary,
+            borderLeft: `1px solid ${colors.border}`,
+            boxShadow: '-8px 0 40px rgba(0,0,0,0.4)',
+            transform: drawerOpen ? 'translateX(0)' : 'translateX(105%)',
+            transition: 'transform 0.3s cubic-bezier(0.4,0,0.2,1)',
+            display: 'flex', flexDirection: 'column',
+            overflowY: 'auto',
+          }}>
+            {/* Drawer header */}
+            <div style={{ padding: '16px 20px', borderBottom: `1px solid ${colors.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, background: colors.bgTertiary }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ width: 4, height: 20, borderRadius: 2, background: `linear-gradient(to bottom, ${colors.primary}, ${colors.blue})` }} />
+                <span style={{ fontSize: 15, fontWeight: 700, color: colors.text }}>{t('INPUT_TRANSACTION')}</span>
               </div>
-              <input style={s.darkInput(colors)} placeholder={t('SPK_NUMBER')} value={formData.spk_number} onChange={e => setFormData({ ...formData, spk_number: e.target.value.toUpperCase() })} required />
-              <input style={s.darkInput(colors)} placeholder={t('STYLE_ARTICLE')} value={formData.style_name} onChange={e => setFormData({ ...formData, style_name: e.target.value.toUpperCase() })} />
-              <div style={{display:'flex', gap:5}}>
-                 <input style={{...s.darkInput(colors), flex:1}} placeholder={t('ORDER_QTY')} type="number" value={formData.target_qty || ''} onChange={e => setFormData({ ...formData, target_qty: e.target.value })} />
-                 <div style={{flex:1, position:'relative'}}>
-                   <input
-                     style={{...s.darkInput(colors), width:'93%', color: colors.text}}
-                     type="date"
-                     value={formData.xfd_date}
-                     onChange={e => setFormData({ ...formData, xfd_date: e.target.value })}
-                   />
-                   {/* XFD warning message */}
-                   {formData.xfd_date && (() => {
-                     const now = new Date();
-                     const xfd = new Date(formData.xfd_date);
-                     const diff = Math.ceil((xfd - now) / (1000 * 60 * 60 * 24));
-                     if (diff < 0) {
-                       return <div style={{position:'absolute', top:'100%', left:0, fontSize:12, color:colors.danger}}>⚠️ {t('XFD_PASSED')}</div>;
-                     }
-                     if (diff <= 3) {
-                       return <div style={{position:'absolute', top:'100%', left:0, fontSize:12, color:colors.warning}}>⚠️ {t('XFD_DAYS_LEFT')} {diff} {t('DAYS')}</div>;
-                     }
-                     return null;
-                   })()}
-                 </div>
+              <button onClick={() => setDrawerOpen(false)} style={{ background: 'none', border: 'none', color: colors.textMuted, fontSize: 22, cursor: 'pointer', padding: '4px 8px', borderRadius: 8, lineHeight: 1 }}>✕</button>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={e => { handleSubmit(e); setDrawerOpen(false); }} style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 14, flex: 1 }}>
+
+              {/* IN / OUT Toggle — big touch target */}
+              <div style={{ display: 'flex', background: colors.bgTertiary, border: `1px solid ${colors.border}`, borderRadius: 12, padding: 4, gap: 4 }}>
+                <button type="button" onClick={() => setFormData({...formData, type:'IN'})}
+                  style={{ flex:1, padding:'12px', border:'none', borderRadius:9, cursor:'pointer', fontWeight:700, fontSize:14, transition:'all 0.2s',
+                    background: formData.type==='IN' ? colors.success : 'transparent',
+                    color: formData.type==='IN' ? '#fff' : colors.textMuted,
+                    boxShadow: formData.type==='IN' ? `0 2px 10px ${colors.successGlow}` : 'none' }}>
+                  ↓ {t('IN_ENTRY')}
+                </button>
+                <button type="button" onClick={() => setFormData({...formData, type:'OUT'})}
+                  style={{ flex:1, padding:'12px', border:'none', borderRadius:9, cursor:'pointer', fontWeight:700, fontSize:14, transition:'all 0.2s',
+                    background: formData.type==='OUT' ? colors.danger : 'transparent',
+                    color: formData.type==='OUT' ? '#fff' : colors.textMuted,
+                    boxShadow: formData.type==='OUT' ? `0 2px 10px ${colors.dangerGlow}` : 'none' }}>
+                  ↑ {t('OUT_EXIT')}
+                </button>
               </div>
-              <input
-                style={{...s.darkInput(colors), border: formData.type==='OUT'?`1px solid ${colors.danger}`:`1px solid ${colors.border}`}}
-                placeholder={t('STOCK')}
-                type="number"
-                value={formData.qty || ''}
-                onChange={e => setFormData({ ...formData, qty: e.target.value })}
-                max={formData.target_qty || undefined}
-                required
-              />
-              <select style={s.darkInput(colors)} value={formData.rack} onChange={e => setFormData({ ...formData, rack: e.target.value })} required>
-                <option value="">-- {t('RACK_LOCATION')} --</option>
-                {DAFTAR_RAK_FULL.map(r => <option key={r} value={r}>{formatRakDisplay(r)}</option>)}
-              </select>
-              <div style={{padding: '12px', background: colors.bgTertiary, borderRadius: '8px', border: `1px solid ${colors.border}`}}>
-                <label style={{fontSize: '11px', color: colors.textMuted}}>{t('FROM_STOCKFIT')}</label>
-                <select style={{...s.darkInput(colors), width: '100%', marginTop:5}} value={formData.source_from} onChange={e => setFormData({ ...formData, source_from: e.target.value })}>
-                  <option value="">-- {t('CHOOSE_STOCKFIT')} --</option>
-                  {DAFTAR_STOCKFIT.map(sf => <option key={sf} value={sf}>{sf}</option>)}
+
+              {/* SPK */}
+              <div>
+                <label style={{ fontSize:11, fontWeight:600, color:colors.textMuted, letterSpacing:'0.8px', textTransform:'uppercase', display:'block', marginBottom:6 }}>{t('SPK_NUMBER')}</label>
+                <input style={{ ...inputStyle, fontSize:15, padding:'13px' }} placeholder="SPK-XXXX"
+                  value={formData.spk_number}
+                  onChange={e => setFormData({...formData, spk_number: e.target.value.toUpperCase()})}
+                  onKeyDown={e => e.key==='Enter' && document.getElementById('style-input')?.focus()}
+                  {...inputFocusProps} required />
+              </div>
+
+              {/* Style */}
+              <div>
+                <label style={{ fontSize:11, fontWeight:600, color:colors.textMuted, letterSpacing:'0.8px', textTransform:'uppercase', display:'block', marginBottom:6 }}>{t('STYLE_ARTICLE')}</label>
+                <input id="style-input" style={{ ...inputStyle, fontSize:15, padding:'13px' }} placeholder="Style name..."
+                  value={formData.style_name}
+                  onChange={e => setFormData({...formData, style_name: e.target.value.toUpperCase()})}
+                  onKeyDown={e => e.key==='Enter' && document.getElementById('orderqty-input')?.focus()}
+                  {...inputFocusProps} />
+              </div>
+
+              {/* Order Qty + XFD */}
+              <div style={{ display:'flex', gap:10 }}>
+                <div style={{ flex:1 }}>
+                  <label style={{ fontSize:11, fontWeight:600, color:colors.textMuted, letterSpacing:'0.8px', textTransform:'uppercase', display:'block', marginBottom:6 }}>{t('ORDER_QTY')}</label>
+                  <input id="orderqty-input" style={{ ...inputStyle, fontSize:15, padding:'13px' }} placeholder="0" type="number" inputMode="numeric"
+                    value={formData.target_qty||''}
+                    onChange={e => setFormData({...formData, target_qty:e.target.value})}
+                    onKeyDown={e => e.key==='Enter' && document.getElementById('xfd-input')?.focus()}
+                    {...inputFocusProps} />
+                </div>
+                <div style={{ flex:1, position:'relative' }}>
+                  <label style={{ fontSize:11, fontWeight:600, color:colors.textMuted, letterSpacing:'0.8px', textTransform:'uppercase', display:'block', marginBottom:6 }}>XFD</label>
+                  <input id="xfd-input" style={{ ...inputStyle, fontSize:14, padding:'13px', colorScheme: theme==='dark'?'dark':'light' }} type="date"
+                    value={formData.xfd_date}
+                    onChange={e => setFormData({...formData, xfd_date:e.target.value})}
+                    {...inputFocusProps} />
+                  {formData.xfd_date && (() => {
+                    const diff = Math.ceil((new Date(formData.xfd_date)-new Date())/(1000*60*60*24));
+                    if(diff<0) return <div style={{ fontSize:10, color:colors.danger, marginTop:3, fontWeight:600 }}>⚠ {t('XFD_PASSED')}</div>;
+                    if(diff<=3) return <div style={{ fontSize:10, color:colors.warning, marginTop:3, fontWeight:600 }}>⚠ {diff}d left</div>;
+                    return null;
+                  })()}
+                </div>
+              </div>
+
+              {/* Stock qty — big */}
+              <div>
+                <label style={{ fontSize:11, fontWeight:600, color:colors.textMuted, letterSpacing:'0.8px', textTransform:'uppercase', display:'block', marginBottom:6 }}>{t('STOCK')}</label>
+                <input id="qty-input" style={{ ...inputStyle, fontSize:22, padding:'14px', fontWeight:700, fontFamily:"'JetBrains Mono',monospace", textAlign:'center',
+                  borderColor: formData.type==='OUT' ? colors.danger : colors.border,
+                  boxShadow: formData.type==='OUT' ? `0 0 0 2px ${colors.dangerGlow}` : 'none' }}
+                  placeholder="0" type="number" inputMode="numeric"
+                  value={formData.qty||''}
+                  onChange={e => setFormData({...formData, qty:e.target.value})}
+                  onKeyDown={e => e.key==='Enter' && document.getElementById('rack-select')?.focus()}
+                  {...inputFocusProps} required />
+              </div>
+
+              {/* Rack */}
+              <div>
+                <label style={{ fontSize:11, fontWeight:600, color:colors.textMuted, letterSpacing:'0.8px', textTransform:'uppercase', display:'block', marginBottom:6 }}>{t('RACK_LOCATION')}</label>
+                <select id="rack-select" style={{ ...inputStyle, fontSize:15, padding:'13px', cursor:'pointer' }}
+                  value={formData.rack}
+                  onChange={e => { setFormData({...formData, rack:e.target.value}); document.getElementById('stockfit-select')?.focus(); }}
+                  {...inputFocusProps} required>
+                  <option value="">-- Pilih Rak --</option>
+                  {DAFTAR_RAK_FULL.map(r=><option key={r} value={r}>{formatRakDisplay(r)}</option>)}
                 </select>
-                <label style={{fontSize: '11px', color: colors.textMuted, display:'block', marginTop:10}}>{t('TO_DESTINATION')}</label>
-                <input style={{...s.darkInput(colors), width: '94%', marginTop:5, opacity: 0.8}} value={formData.destination} onChange={e => setFormData({ ...formData, destination: e.target.value })} />
               </div>
-              <div style={{ padding: '10px', background: colors.bgTertiary, borderRadius: '6px', border: `1px solid ${colors.border}`, fontSize: '12px', color: colors.textMuted, textAlign: 'center' }}>
-                {t('INPUT_TIME')}: {currentTime.toLocaleString('id-ID', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+
+              {/* Routing */}
+              <div style={{ background:colors.bgTertiary, borderRadius:10, padding:'14px', border:`1px solid ${colors.border}` }}>
+                <div style={{ fontSize:10, fontWeight:700, color:colors.textMuted, letterSpacing:'1px', textTransform:'uppercase', marginBottom:10 }}>ROUTING</div>
+                <label style={{ fontSize:11, fontWeight:600, color:colors.textMuted, letterSpacing:'0.8px', textTransform:'uppercase', display:'block', marginBottom:6 }}>{t('FROM_STOCKFIT')}</label>
+                <select id="stockfit-select" style={{ ...inputStyle, fontSize:14, padding:'13px', marginBottom:12, cursor:'pointer' }}
+                  value={formData.source_from}
+                  onChange={e => setFormData({...formData, source_from:e.target.value})}
+                  {...inputFocusProps}>
+                  <option value="">-- {t('CHOOSE_STOCKFIT')} --</option>
+                  {DAFTAR_STOCKFIT.map(sf=><option key={sf} value={sf}>{sf}</option>)}
+                </select>
+                <label style={{ fontSize:11, fontWeight:600, color:colors.textMuted, letterSpacing:'0.8px', textTransform:'uppercase', display:'block', marginBottom:6 }}>{t('TO_DESTINATION')}</label>
+                <input style={{ ...inputStyle, fontSize:14, padding:'13px' }}
+                  value={formData.destination}
+                  onChange={e => setFormData({...formData, destination:e.target.value})}
+                  {...inputFocusProps} />
               </div>
-              <button type="submit" style={{ ...s.btn(colors), background: colors.blue, padding: 15 }}>{isSubmitting ? t('PROCESSING') : t('SAVE_DATA')}</button>
+
+              {/* Timestamp */}
+              <div style={{ padding:'10px 14px', background:colors.bgTertiary, borderRadius:8, border:`1px solid ${colors.border}`, textAlign:'center' }}>
+                <div style={{ fontSize:9, color:colors.textMuted, letterSpacing:'1px', textTransform:'uppercase', marginBottom:3 }}>{t('INPUT_TIME')}</div>
+                <div style={{ fontSize:13, fontFamily:"'JetBrains Mono',monospace", fontWeight:600, color:colors.primary }}>
+                  {currentTime.toLocaleString('id-ID', {year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'})}
+                </div>
+              </div>
+
+              {/* Submit */}
+              <button type="submit" disabled={isSubmitting} style={{
+                padding:'16px', border:'none', borderRadius:12,
+                background: isSubmitting ? colors.border : `linear-gradient(135deg,${colors.blue},${colors.primary})`,
+                color:'#fff', fontWeight:700, fontSize:15, cursor: isSubmitting?'not-allowed':'pointer',
+                letterSpacing:'0.5px',
+                boxShadow: isSubmitting?'none':`0 4px 20px ${colors.blueGlow}`,
+                transition:'all 0.2s', opacity: isSubmitting?0.6:1,
+              }}>
+                {isSubmitting ? `⟳ ${t('PROCESSING')}` : `✓ ${t('SAVE_DATA')}`}
+              </button>
             </form>
           </div>
-          <div style={{ flex: 2.5, background: colors.bgSecondary, padding: '20px', borderRadius: '12px', border: `1px solid ${colors.border}` }}>
-            <input style={{ ...s.darkInput(colors), width: '100%', marginBottom: '15px' }} placeholder={t('SEARCH_SPK')} onChange={e => setSearchTerm(e.target.value.toUpperCase())} />
-            {/* unified parent container for building cards */}
-            <div style={{ display: 'grid', gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gridAutoFlow: 'row', gap: '10px', maxHeight: '500px', overflowY: 'auto', alignItems: 'start', boxSizing: 'border-box' }}>
-              {HURUF_RAK.map(h => (
-                <div key={h} style={{ width: '100%' }}>
-                  <div style={{ textAlign: 'center', background: colors.border, color:colors.primary, padding: '5px', fontWeight: 'bold', borderRadius: '4px', fontSize: 12 }}>{t('BUILDING')} {h}</div>
-                  {RAK_CONFIG[h].map(n => {
-                    const r = `${h}-${n}`;
-                    const items = inventory.filter(i => i.rack === r && i.spk.includes(searchTerm));
-                    const total = items.reduce((a, b) => a + b.stock, 0);
-                    // hide rack entirely when total stock is 0
-                    if (total === 0) return null;
-                    return (
-                      <div key={r} style={{ padding: '8px', border: `1px solid ${colors.border}`, marginTop: '5px', background: colors.bgTertiary, borderRadius: 4 }}>
-                        <div style={{ fontWeight: 'bold', fontSize: '11px', color: colors.primary }}>{formatRakDisplay(r)} ({total})</div>
-                        {items.map((it, idx) => {
-                          // show percentage of completion (0 balance => 100%) and clamp
-                          let balancePersen = it.target > 0 ? Math.round(((it.target - it.balance) / it.target) * 100) : 0;
-                          balancePersen = Math.max(0, Math.min(balancePersen, 100));
-                          let balanceColor = (balancePersen >= 100) ? colors.success : (balancePersen < 30 ? colors.danger : colors.primary);
-                          return (
-                            <div key={idx} onClick={() => handleItemClick(it)} style={{ fontSize: '9px', marginTop: 4, borderTop: `1px solid ${colors.border}`, paddingTop: 2, color: colors.textMuted, cursor: 'pointer' }}>
-                              <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: 2}}>
-                                <b>{it.spk}</b> <span style={{fontSize: '8px', color: balanceColor, fontWeight: 'bold'}}>{balancePersen}%</span>
-                              </div>
-                              <div style={{fontSize:'9px', color: colors.textMuted, fontStyle:'italic'}}>{it.style}</div>
-                              <div style={{fontSize:'8px', color: colors.textMuted}}>XFD: {it.xfd}</div>
-                              <div style={{textAlign:'right', color: colors.primary, fontSize:'11px'}}>{it.stock} {t('PIECES')} | {t('BALANCE')}: {it.balance}</div>
-                              <div style={{textAlign:'right', color: colors.warning, fontSize:'9px'}}>→ {it.destination}</div>
-                            </div>
-                          );
-                        })}
+
+          {/* ── RACK GRID full width ── */}
+          <div style={{ background:colors.bgSecondary, border:`1px solid ${colors.border}`, borderRadius:'16px', padding:'20px', boxShadow: theme==='dark'?'0 4px 20px rgba(0,0,0,0.2)':'0 4px 20px rgba(0,0,0,0.05)' }}>
+
+            {/* Search bar */}
+            <div style={{ position:'relative', marginBottom:16 }}>
+              <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', fontSize:14, color:colors.textMuted, pointerEvents:'none' }}>🔍</span>
+              <input style={{ ...inputStyle, paddingLeft:36 }} className="sds-input" placeholder={t('SEARCH_SPK')} onChange={e => setSearchTerm(e.target.value.toUpperCase())} {...inputFocusProps} />
+            </div>
+
+            {/* ALL buildings in one flat grid — semua sejajar */}
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(170px, 1fr))', gap:'10px', maxHeight:'calc(100vh - 220px)', overflowY:'auto', paddingRight:4 }}>
+              {HURUF_RAK.flatMap(h =>
+                RAK_CONFIG[h].map(n => {
+                  const r = `${h}-${n}`;
+                  const items = inventory.filter(i => i.rack===r && i.spk.includes(searchTerm));
+                  const total = items.reduce((a,b) => a+b.stock, 0);
+                  const isEmpty = total === 0;
+                  return (
+                    <div key={r} style={{
+                      background: isEmpty ? 'transparent' : colors.bgTertiary,
+                      border: isEmpty ? `1px dashed ${colors.border}` : `1px solid ${colors.border}`,
+                      borderRadius:10, padding:'10px', opacity: isEmpty?0.4:1,
+                      minHeight: 70,
+                    }}>
+                      {/* Rack header */}
+                      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom: isEmpty?0:8, paddingBottom: isEmpty?0:6, borderBottom: isEmpty?'none':`1px solid ${colors.border}` }}>
+                        <span style={{ fontSize:11, fontWeight:800, color: isEmpty?colors.textMuted:colors.primary }}>{formatRakDisplay(r)}</span>
+                        {isEmpty
+                          ? <span style={{ fontSize:8, color:colors.textMuted, background:colors.border, padding:'1px 6px', borderRadius:20 }}>KOSONG</span>
+                          : <span style={{ fontSize:10, fontWeight:700, background:colors.primaryGlow, color:colors.primary, padding:'1px 7px', borderRadius:20 }}>{total}</span>
+                        }
                       </div>
-                    );
-                  })}
-                </div>
-              ))}
+                      {isEmpty
+                        ? <div style={{ textAlign:'center', fontSize:16, opacity:0.25, paddingTop:4 }}>📦</div>
+                        : items.map((it,idx) => {
+                            let bp = it.target>0?Math.round(((it.target-it.balance)/it.target)*100):0;
+                            bp = Math.max(0,Math.min(bp,100));
+                            const bColor = bp>=100?colors.success:bp<30?colors.danger:colors.primary;
+                            return (
+                              <div key={idx} className="spk-row" onClick={() => { handleItemClick(it); setDrawerOpen(true); }}
+                                style={{ fontSize:10, marginTop:idx>0?6:0, paddingTop:idx>0?6:0, borderTop:idx>0?`1px dashed ${colors.border}`:'none', cursor:'pointer', minHeight:44 }}>
+                                <div style={{ display:'flex', justifyContent:'space-between', marginBottom:3 }}>
+                                  <b style={{ color:colors.text, fontSize:11 }}>{it.spk}</b>
+                                  <span style={{ fontSize:10, color:bColor, fontWeight:700 }}>{bp}%</span>
+                                </div>
+                                <div style={{ fontSize:'9px', color:colors.textMuted, fontStyle:'italic', marginBottom:3 }}>{it.style}</div>
+                                <div style={{ width:'100%', height:3, background:colors.border, borderRadius:2, marginBottom:3 }}>
+                                  <div style={{ width:`${bp}%`, height:'100%', background:bColor, borderRadius:2, transition:'width 0.3s' }} />
+                                </div>
+                                <div style={{ display:'flex', justifyContent:'space-between', fontSize:9 }}>
+                                  <span style={{ color:colors.textMuted }}>XFD:{it.xfd}</span>
+                                  <span style={{ color:colors.primary, fontWeight:600 }}>{it.stock} | Bal:{it.balance}</span>
+                                </div>
+                              </div>
+                            );
+                          })
+                      }
+                    </div>
+                  );
+                })
+              )}
             </div>
           </div>
         </div>
+
       ) : (
-        /* TV MODE DASHBOARD */
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <div style={{ textAlign: 'center', color: colors.primary, fontSize: '25px', fontWeight: 'bold', marginBottom: '10px' }}>
-            {currentTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-          </div>
-          <div style={{ display: 'flex', gap: '20px' }}>
-             <div style={s.modernStatCard(colors)}>
-                <div style={s.watermark}>IN</div>
-                <div style={s.statLabel(colors)}>{t('ENTRY_TODAY')}</div>
-                <div style={{...s.statFlex, color: colors.success}}>
-                   <div style={s.statBigVal}>{rawRecords.filter(r => r.qty_in > 0 && r.waktu_input.includes(todayStr)).reduce((a, b) => a + Number(b.qty_in), 0)}</div>
-                   <div style={s.unit}>{t('PIECE')}</div>
+        /* ====== TV MODE ====== */
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+
+          {/* ── 3 TIMEZONE CLOCKS ── */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+            {[
+              { label: '🇮🇩  INDONESIA', tz: 'Asia/Jakarta', locale: 'id-ID', color: colors.primary, glow: colors.primaryGlow },
+              { label: '🇬🇧  UNITED KINGDOM', tz: 'Europe/London', locale: 'en-GB', color: colors.warning, glow: colors.warningGlow },
+              { label: '🇹🇼  TAIWAN', tz: 'Asia/Taipei', locale: 'zh-TW', color: colors.success, glow: colors.successGlow },
+            ].map(({ label, tz, locale, color, glow }) => (
+              <div key={tz} style={{ background: colors.bgSecondary, border: `1px solid ${colors.border}`, borderRadius: '16px', padding: '16px 20px', textAlign: 'center', position: 'relative', overflow: 'hidden', boxShadow: `0 4px 24px ${glow}` }}>
+                {/* subtle bg glow blob */}
+                <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(ellipse at center, ${glow} 0%, transparent 70%)`, pointerEvents: 'none' }} />
+                <div style={{ fontSize: '10px', fontWeight: 700, color: color, letterSpacing: '2px', textTransform: 'uppercase', marginBottom: 6, opacity: 0.9 }}>{label}</div>
+                <div style={{ fontSize: '36px', fontWeight: 900, fontFamily: "'JetBrains Mono', monospace", color: color, letterSpacing: '2px', lineHeight: 1, textShadow: `0 0 20px ${glow}` }}>
+                  {currentTime.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: tz })}
                 </div>
-             </div>
-             <div style={s.modernStatCard(colors)}>
-                <div style={{...s.watermark, color:'rgba(248,81,73,0.05)'}}>OUT</div>
-                <div style={s.statLabel(colors)}>{t('EXIT_TODAY')}</div>
-                <div style={{...s.statFlex, color: colors.danger}}>
-                   <div style={s.statBigVal}>{rawRecords.filter(r => r.qty_out > 0 && r.waktu_input.includes(todayStr)).reduce((a, b) => a + Number(b.qty_out), 0)}</div>
-                   <div style={s.unit}>{t('PIECE')}</div>
+                <div style={{ fontSize: '10px', color: colors.textMuted, marginTop: 6, letterSpacing: '1px' }}>
+                  {currentTime.toLocaleDateString(locale, { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric', timeZone: tz })}
                 </div>
-             </div>
-             <div style={{...s.modernStatCard(colors), background: `linear-gradient(135deg, ${colors.blue} 0%, ${colors.bgSecondary} 100%)`, border: `1px solid ${colors.primary}`}}>
-                <div style={{...s.watermark, color:'rgba(255,255,255,0.07)'}}>MARKET</div>
-                <div style={{...s.statLabel(colors), color:'rgba(255,255,255,0.7)'}}>{t('GLOBAL_STOCK')}</div>
-                <div style={{...s.statFlex, color: '#ffffff'}}>
-                   <div style={s.statBigVal}>{inventory.reduce((a, b) => a + b.stock, 0)}</div>
-                   <div style={s.unit}>{t('PIECE')}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* ── TOP ROW: Stats + Pie Chart + Line Chart ── */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1.6fr 1.8fr', gap: '12px', alignItems: 'stretch' }}>
+
+            {/* ENTRY */}
+            <div style={{ background: colors.bgSecondary, borderRadius: '14px', padding: '14px 16px', border: `1px solid ${colors.border}`, position: 'relative', overflow: 'hidden', boxShadow: `0 4px 20px ${colors.successGlow}` }}>
+              <div style={{ position: 'absolute', right: -8, top: -8, fontSize: 60, fontWeight: 900, color: colors.success, opacity: 0.04, lineHeight: 1, pointerEvents: 'none' }}>IN</div>
+              <div style={{ fontSize: '9px', fontWeight: 700, color: colors.success, letterSpacing: '2px', textTransform: 'uppercase', marginBottom: 6 }}>{t('ENTRY_TODAY')}</div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                <span style={{ fontSize: 34, fontWeight: 900, color: colors.success, fontFamily: "'JetBrains Mono', monospace", lineHeight: 1 }}>{entryToday}</span>
+                <span style={{ fontSize: 11, color: colors.textMuted }}>{t('PIECE')}</span>
+              </div>
+            </div>
+
+            {/* EXIT */}
+            <div style={{ background: colors.bgSecondary, borderRadius: '14px', padding: '14px 16px', border: `1px solid ${colors.border}`, position: 'relative', overflow: 'hidden', boxShadow: `0 4px 20px ${colors.dangerGlow}` }}>
+              <div style={{ position: 'absolute', right: -8, top: -8, fontSize: 60, fontWeight: 900, color: colors.danger, opacity: 0.04, lineHeight: 1, pointerEvents: 'none' }}>OUT</div>
+              <div style={{ fontSize: '9px', fontWeight: 700, color: colors.danger, letterSpacing: '2px', textTransform: 'uppercase', marginBottom: 6 }}>{t('EXIT_TODAY')}</div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                <span style={{ fontSize: 34, fontWeight: 900, color: colors.danger, fontFamily: "'JetBrains Mono', monospace", lineHeight: 1 }}>{exitToday}</span>
+                <span style={{ fontSize: 11, color: colors.textMuted }}>{t('PIECE')}</span>
+              </div>
+            </div>
+
+            {/* GLOBAL STOCK */}
+            <div style={{ background: `linear-gradient(135deg, ${colors.blue}18, ${colors.primary}0a)`, borderRadius: '14px', padding: '14px 16px', border: `1px solid ${colors.primary}44`, position: 'relative', overflow: 'hidden', boxShadow: `0 4px 20px ${colors.blueGlow}` }}>
+              <div style={{ position: 'absolute', right: -8, top: -8, fontSize: 44, fontWeight: 900, color: colors.primary, opacity: 0.04, lineHeight: 1, pointerEvents: 'none' }}>STK</div>
+              <div style={{ fontSize: '9px', fontWeight: 700, color: colors.primary, letterSpacing: '2px', textTransform: 'uppercase', marginBottom: 6 }}>{t('GLOBAL_STOCK')}</div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                <span style={{ fontSize: 34, fontWeight: 900, color: colors.primary, fontFamily: "'JetBrains Mono', monospace", lineHeight: 1 }}>{globalStock}</span>
+                <span style={{ fontSize: 11, color: colors.textMuted }}>{t('PIECE')}</span>
+              </div>
+            </div>
+
+            {/* PIE CHART */}
+            {(() => {
+              const buildingData = HURUF_RAK.map(h=>({
+                label: `${t('BLDG')} ${h}`,
+                value: inventory.filter(i=>i.rack.startsWith(h)).reduce((a,b)=>a+b.stock,0),
+                color: [colors.primary,colors.success,colors.warning,colors.danger,colors.purple,colors.blue][HURUF_RAK.indexOf(h)%6]
+              })).filter(d=>d.value>0);
+              const total = buildingData.reduce((a,b)=>a+b.value,0);
+              let startAngle = -Math.PI/2;
+              const cx=75,cy=70,r=55;
+              const slices = buildingData.map(d=>{
+                const angle=(d.value/total)*2*Math.PI;
+                const x1=cx+r*Math.cos(startAngle),y1=cy+r*Math.sin(startAngle);
+                startAngle+=angle;
+                const x2=cx+r*Math.cos(startAngle),y2=cy+r*Math.sin(startAngle);
+                const large=angle>Math.PI?1:0;
+                return {...d, path:`M${cx},${cy} L${x1.toFixed(2)},${y1.toFixed(2)} A${r},${r},0,${large},1,${x2.toFixed(2)},${y2.toFixed(2)} Z`};
+              });
+              return (
+                <div style={{ background:colors.bgSecondary, borderRadius:'14px', border:`1px solid ${colors.border}`, padding:'12px 14px', overflow:'hidden' }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:7, marginBottom:8, paddingBottom:7, borderBottom:`1px solid ${colors.border}` }}>
+                    <div style={{ width:3, height:13, borderRadius:2, background:`linear-gradient(to bottom,${colors.purple},${colors.primary})` }}/>
+                    <span style={{ fontSize:'10px', fontWeight:700, color:colors.text, letterSpacing:'0.5px', textTransform:'uppercase' }}>{t('DIST_STOCK_BUILDING')}</span>
+                  </div>
+                  <div style={{ display:'flex', gap:10, alignItems:'center' }}>
+                    <svg width="150" height="140" style={{ flexShrink:0 }}>
+                      {slices.map((s,i)=><path key={i} d={s.path} fill={s.color} stroke={colors.bgSecondary} strokeWidth="2" opacity="0.9"/>)}
+                      <circle cx={cx} cy={cy} r={r*0.42} fill={colors.bgSecondary}/>
+                      <text x={cx} y={cy-5} textAnchor="middle" fontSize="9" fontWeight="800" fill={colors.textMuted}>{t('TOTAL')}</text>
+                      <text x={cx} y={cy+9} textAnchor="middle" fontSize="11" fontWeight="900" fill={colors.primary}>{total.toLocaleString()}</text>
+                    </svg>
+                    <div style={{ flex:1, display:'flex', flexDirection:'column', gap:4 }}>
+                      {buildingData.map((d,i)=>(
+                        <div key={i} style={{ display:'flex', alignItems:'center', gap:5 }}>
+                          <div style={{ width:8, height:8, borderRadius:2, background:d.color, flexShrink:0 }}/>
+                          <span style={{ fontSize:9, color:colors.text, fontWeight:600, flex:1 }}>{d.label}</span>
+                          <span style={{ fontSize:9, color:d.color, fontWeight:700 }}>{Math.round(d.value/total*100)}%</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-             </div>
+              );
+            })()}
+
+            {/* LINE CHART */}
+            {(() => {
+              const days=[];
+              const dayLabels=[];
+              for(let i=6;i>=0;i--){
+                const d=new Date();
+                d.setDate(d.getDate()-i);
+                // format DD-M-YYYY to match waktu_input stored format
+                const dd=String(d.getDate()).padStart(2,'0');
+                const mm=String(d.getMonth()+1);
+                const yyyy=d.getFullYear();
+                days.push(`${dd}-${mm}-${yyyy}`);
+                dayLabels.push(`${dd}-${String(d.getMonth()+1).padStart(2,'0')}`);
+              }
+              const inData=days.map(day=>rawRecords.filter(r=>r.qty_in>0&&(r.waktu_input||'').startsWith(day)).reduce((a,b)=>a+Number(b.qty_in),0));
+              const outData=days.map(day=>rawRecords.filter(r=>r.qty_out>0&&(r.waktu_input||'').startsWith(day)).reduce((a,b)=>a+Number(b.qty_out),0));
+              const maxVal=Math.max(...inData,...outData,1);
+              const W=320,H=140,padL=32,padB=20,padT=14,chartW=W-padL-10,chartH=H-padB-padT;
+              const xStep=chartW/(days.length-1);
+              const toY=v=>padT+chartH-(v/maxVal)*chartH;
+              const toX=i=>padL+i*xStep;
+              const inPath=days.map((_,i)=>`${i===0?'M':'L'}${toX(i).toFixed(1)},${toY(inData[i]).toFixed(1)}`).join(' ');
+              const outPath=days.map((_,i)=>`${i===0?'M':'L'}${toX(i).toFixed(1)},${toY(outData[i]).toFixed(1)}`).join(' ');
+              const inArea=inPath+` L${toX(6).toFixed(1)},${(padT+chartH).toFixed(1)} L${padL},${(padT+chartH).toFixed(1)} Z`;
+              const outArea=outPath+` L${toX(6).toFixed(1)},${(padT+chartH).toFixed(1)} L${padL},${(padT+chartH).toFixed(1)} Z`;
+              return (
+                <div style={{ background:colors.bgSecondary, borderRadius:'14px', border:`1px solid ${colors.border}`, padding:'12px 14px', overflow:'hidden' }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:7, marginBottom:8, paddingBottom:7, borderBottom:`1px solid ${colors.border}` }}>
+                    <div style={{ width:3, height:13, borderRadius:2, background:`linear-gradient(to bottom,${colors.success},${colors.warning})` }}/>
+                    <span style={{ fontSize:'10px', fontWeight:700, color:colors.text, letterSpacing:'0.5px', textTransform:'uppercase' }}>{t('TREND_IN_OUT')}</span>
+                    <div style={{ marginLeft:'auto', display:'flex', gap:8 }}>
+                      <span style={{ fontSize:8, color:colors.success, fontWeight:700 }}>● IN</span>
+                      <span style={{ fontSize:8, color:colors.danger, fontWeight:700 }}>● OUT</span>
+                    </div>
+                  </div>
+                  <svg width={W} height={H} style={{ width:'100%', height:'auto' }}>
+                    {/* Y-axis grid lines + labels */}
+                    {[0,0.5,1].map(f=>(
+                      <g key={f}>
+                        <line x1={padL} y1={toY(maxVal*f)} x2={padL+chartW} y2={toY(maxVal*f)} stroke={colors.border} strokeWidth="0.5"/>
+                        <text x={padL-2} y={toY(maxVal*f)+3} textAnchor="end" fontSize="7" fill={colors.textMuted}>{Math.round(maxVal*f)}</text>
+                      </g>
+                    ))}
+                    <path d={inArea} fill={colors.success} opacity="0.08"/>
+                    <path d={outArea} fill={colors.danger} opacity="0.08"/>
+                    <path d={inPath} fill="none" stroke={colors.success} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round"/>
+                    <path d={outPath} fill="none" stroke={colors.danger} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round"/>
+                    {days.map((_,i)=>(
+                      <g key={i}>
+                        {/* IN dot + value label */}
+                        {inData[i]>0&&<>
+                          <circle cx={toX(i)} cy={toY(inData[i])} r="3.5" fill={colors.success}/>
+                          <text x={toX(i)} y={toY(inData[i])-6} textAnchor="middle" fontSize="8" fontWeight="700" fill={colors.success}>{inData[i]}</text>
+                        </>}
+                        {/* OUT dot + value label */}
+                        {outData[i]>0&&<>
+                          <circle cx={toX(i)} cy={toY(outData[i])} r="3.5" fill={colors.danger}/>
+                          <text x={toX(i)} y={toY(outData[i])+13} textAnchor="middle" fontSize="8" fontWeight="700" fill={colors.danger}>{outData[i]}</text>
+                        </>}
+                        {/* X-axis date label */}
+                        <text x={toX(i)} y={H-3} textAnchor="middle" fontSize="7" fill={colors.textMuted}>{dayLabels[i]}</text>
+                      </g>
+                    ))}
+                  </svg>
+                </div>
+              );
+            })()}
+
           </div>
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
-            <input
-              style={{ ...s.darkInput(colors), width: '40%', textAlign: 'center' }}
-              placeholder={t('SEARCH_DISPLAY')}
-              value={tvSearch}
-              onChange={e => setTvSearch(e.target.value)}
-            />
+
+          {/* ── SEARCH ── */}
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}>
+            <div style={{ position: 'relative', width: '36%' }}>
+              <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 14, color: colors.textMuted, pointerEvents: 'none' }}>🔍</span>
+              <input style={{ ...inputStyle, paddingLeft: 36, textAlign: 'center' }} placeholder={t('SEARCH_DISPLAY')} value={tvSearch} onChange={e => setTvSearch(e.target.value)} {...inputFocusProps} />
+            </div>
           </div>
-          <div style={{ display: 'flex', gap: '15px' }}>
-            {/* unified parent container for building cards in TV mode */}
-            <div style={{ flex: 4, display: 'grid', gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gridAutoFlow: 'row', gap: '10px', maxHeight: '500px', overflowY: 'auto', alignItems: 'start', boxSizing: 'border-box' }}>
+
+          {/* ── RACK GRID FULL WIDTH ── */}
+          <div style={{ background: colors.bgSecondary, borderRadius: '16px', border: `1px solid ${colors.border}`, padding: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+              <div style={{ width: 4, height: 18, borderRadius: 2, background: `linear-gradient(to bottom, ${colors.primary}, ${colors.blue})` }} />
+              <span style={{ fontSize: 13, fontWeight: 800, color: colors.text, letterSpacing: '0.5px', textTransform: 'uppercase' }}>{t('RACK_OVERVIEW')}</span>
+              <div style={{ flex: 1, height: 1, background: colors.border }} />
+              <span style={{ fontSize: 10, color: colors.textMuted }}>{inventory.length} {t('SPK_ACTIVE')} · {DAFTAR_RAK_FULL.length} {t('TOTAL_RACKS')}</span>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               {HURUF_RAK.map(h => {
-                const totalHuruf = inventory.filter(i => i.rack.startsWith(h)).reduce((a, b) => a + b.stock, 0);
+                const totalHuruf = inventory.filter(i => i.rack.startsWith(h)).reduce((a,b)=>a+b.stock,0);
+                const allRacks = RAK_CONFIG[h].map(n => {
+                  const r = `${h}-${n}`;
+                  const itms = inventory.filter(i => {
+                    if (i.rack !== r) return false;
+                    if (!tvSearch) return true;
+                    const q = tvSearch.toString().toUpperCase();
+                    return (i.spk||'').toUpperCase().includes(q)||(i.style||'').toUpperCase().includes(q)||(i.xfd||'').includes(tvSearch);
+                  });
+                  return { r, itms, ttl: itms.reduce((a,b)=>a+b.stock,0) };
+                });
+                const filledCount = allRacks.filter(x=>x.ttl>0).length;
                 return (
                   <div key={h}>
-                    <div style={{background: colors.primary, color: colors.bg, textAlign:'center', fontWeight:'bold', padding:5, borderRadius:4, marginBottom:8, fontSize:12}}>
-                       {t('BUILDING')} {h} <br/> <span style={{fontSize: 9}}>{t('TOTAL')}: {totalHuruf}</span>
+                    <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:8 }}>
+                      <div style={{ background:`linear-gradient(135deg,${colors.primary},${colors.blue})`, borderRadius:'7px', padding:'3px 12px', fontSize:11, fontWeight:800, color:'#fff', letterSpacing:'1px' }}>
+                        {t('BUILDING')} {h}
+                      </div>
+                      <div style={{ flex:1, height:1, background:`linear-gradient(to right,${colors.primary}33,transparent)` }} />
+                      <span style={{ fontSize:9, color:colors.textMuted }}>{filledCount}/{allRacks.length} {t('RACKS_FILLED')}</span>
+                      <span style={{ fontSize:10, fontWeight:700, color:colors.primary, background:colors.primaryGlow, padding:'1px 9px', borderRadius:20 }}>{totalHuruf.toLocaleString()}</span>
                     </div>
-                    {RAK_CONFIG[h].map(n => {
-                      const r = `${h}-${n}`;
-                      const itms = inventory.filter(i => {
-                        if (i.rack !== r) return false;
-                        if (!tvSearch) return true;
-                        const q = tvSearch.toString().toUpperCase();
-                        const spk = (i.spk || '').toString().toUpperCase();
-                        const style = (i.style || '').toString().toUpperCase();
-                        const xfd = (i.xfd || '').toString();
-                        return spk.includes(q) || style.includes(q) || xfd.includes(tvSearch.toString());
-                      });
-                      const ttl = itms.reduce((a,b) => a + b.stock, 0);
-                      // hide rack card when ttl is zero
-                      if (ttl === 0) return null;
-                      return (
-                        <div key={r} style={{background: colors.bgSecondary, padding:8, borderRadius:8, marginBottom:8, border: `1px solid ${colors.primary}`, minHeight:105}}>
-                          <div style={{display:'flex', justifyContent:'space-between', borderBottom:`1px solid ${colors.border}`, fontSize:13, marginBottom:4, paddingBottom:2}}>
-                            <b style={{color: colors.primary}}>{formatRakDisplay(r)}</b> <b>{ttl}</b>
-                          </div>
-                          {itms.map((it, idx) => {
-                            // Calculate balance percentage: (order_qty - balance) / order_qty
-                            let balancePersen = it.target > 0 ? Math.round(((it.target - it.balance) / it.target) * 100) : 0;
-                            balancePersen = Math.max(0, Math.min(balancePersen, 100));
-                            let color = (balancePersen >= 100) ? colors.success : (balancePersen < 30 ? colors.danger : colors.primary);
-                            // Calculate XFD color based on deadline
-                            let xfdColor = colors.warning;
-                            if (it.xfd) {
-                              const now = new Date();
-                              const xfdDate = new Date(it.xfd);
-                              const daysLeft = Math.ceil((xfdDate - now) / (1000 * 60 * 60 * 24));
-                              if (daysLeft < 0) xfdColor = colors.danger; // date passed, red
-                              else if (daysLeft <= 3) xfdColor = colors.warning; // within 3 days, yellow
-                              else xfdColor = colors.success; // more than 3 days, green
+                    <div style={{ display:'grid', gridTemplateColumns:`repeat(${allRacks.length},1fr)`, gap:8 }}>
+                      {allRacks.map(({r,itms,ttl})=>{
+                        const isEmpty = ttl===0;
+                        return (
+                          <div key={r} style={{ background:isEmpty?'transparent':colors.bgTertiary, borderRadius:10, border:isEmpty?`1px dashed ${colors.border}`:`1px solid ${colors.borderAccent}`, padding:'9px 10px', opacity:isEmpty?0.38:1, minHeight:70 }}>
+                            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:isEmpty?4:7, paddingBottom:isEmpty?0:5, borderBottom:isEmpty?'none':`1px solid ${colors.border}` }}>
+                              <span style={{ fontSize:11, fontWeight:800, color:isEmpty?colors.textMuted:colors.primary }}>{formatRakDisplay(r)}</span>
+                              {isEmpty
+                                ? <span style={{ fontSize:8, color:colors.textMuted, background:colors.border, padding:'1px 6px', borderRadius:20 }}>{t('EMPTY')}</span>
+                                : <span style={{ fontSize:10, fontWeight:700, color:colors.primary, background:colors.primaryGlow, padding:'1px 7px', borderRadius:20 }}>{ttl.toLocaleString()}</span>
+                              }
+                            </div>
+                            {isEmpty
+                              ? <div style={{ textAlign:'center', fontSize:18, opacity:0.25, paddingTop:4 }}>📦</div>
+                              : itms.map((it,idx)=>{
+                                  let bp = it.target>0?Math.round(((it.target-it.balance)/it.target)*100):0;
+                                  bp = Math.max(0,Math.min(bp,100));
+                                  const bColor = bp>=100?colors.success:bp<30?colors.danger:colors.primary;
+                                  let xfdUrgent=false,xfdExpired=false,xfdDays=null;
+                                  if(it.xfd){xfdDays=Math.ceil((new Date(it.xfd)-new Date())/86400000);if(xfdDays<0){xfdExpired=true;xfdUrgent=true;}else if(xfdDays<=3)xfdUrgent=true;}
+                                  const xfdColor = xfdExpired?colors.danger:xfdUrgent?colors.warning:colors.success;
+                                  return (
+                                    <div key={idx} style={{ position:'relative', marginTop:idx>0?7:0, paddingTop:idx>0?7:0, borderTop:idx>0?`1px dashed ${colors.border}`:'none', background:xfdUrgent?`${xfdColor}0a`:'transparent', borderRadius:xfdUrgent?6:0, padding:xfdUrgent?'4px 5px':'0' }}>
+                                      {xfdUrgent&&<span style={{ position:'absolute',top:-1,right:-1,fontSize:7,fontWeight:800,background:xfdExpired?colors.danger:colors.warning,color:'#fff',padding:'1px 5px',borderRadius:'0 5px 0 5px',animation:'pulseGlow 1.2s ease-in-out infinite' }}>{xfdExpired?'✕ EXP':`⚠ ${xfdDays}d`}</span>}
+                                      <div style={{ display:'flex',justifyContent:'space-between',marginBottom:2 }}>
+                                        <span style={{ fontSize:10,fontWeight:700,color:colors.text }}>{it.spk}</span>
+                                        <span style={{ fontSize:10,fontWeight:700,color:bColor }}>{bp}%</span>
+                                      </div>
+                                      <div style={{ fontSize:8,color:colors.textMuted,fontStyle:'italic',marginBottom:3 }}>{it.style}</div>
+                                      <div style={{ width:'100%',height:4,background:colors.border,borderRadius:2,marginBottom:3,overflow:'hidden' }}>
+                                        <div style={{ width:`${bp}%`,height:'100%',background:`linear-gradient(90deg,${bColor}88,${bColor})`,borderRadius:2 }} />
+                                      </div>
+                                      <div style={{ display:'flex',justifyContent:'space-between',fontSize:8 }}>
+                                        <span style={{ color:colors.textMuted }}>{it.stock}/{it.target}</span>
+                                        <span style={{ color:it.balance>=0?colors.success:colors.danger,fontWeight:600 }}>Bal:{it.balance}</span>
+                                      </div>
+                                      <div style={{ display:'flex',justifyContent:'space-between',fontSize:8,marginTop:2 }}>
+                                        <span style={{ color:xfdColor,fontWeight:xfdUrgent?700:400 }}>XFD:{it.xfd}</span>
+                                        {it.destination&&<span style={{ color:colors.warning }}>→{it.destination}</span>}
+                                      </div>
+                                    </div>
+                                  );
+                                })
                             }
-                            return (
-                              <div key={idx} style={{fontSize:10, marginTop:8, background: colors.bgTertiary, padding: 6, borderRadius: 6, border: `1px solid ${colors.border}`, position: 'relative'}}>
-                                <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:3}}>
-                                  <b style={{color: colors.text}}>{it.spk}</b>
-                                  <b style={{color: color}}>{balancePersen}%</b>
-                                </div>
-                                <div style={{fontSize:'8px', color: xfdColor}}>XFD: {it.xfd}</div>
-                                <div style={{fontSize:'9px', color: colors.textMuted, fontStyle:'italic'}}>{it.style}</div>
-                                <div style={{width:'100%', height:3, background: colors.border, borderRadius:2, marginBottom:4}}>
-                                  <div style={{width:`${Math.min(balancePersen, 100)}%`, height:'100%', background: color, borderRadius:2}}></div>
-                                </div>
-                                <div style={{display:'flex', justifyContent:'space-between', fontSize:9}}>
-                                  <span>{it.stock}/{it.target}</span>
-                                  <span style={{color: it.balance >= 0 ? colors.success : colors.danger}}>{t('BALANCE')}: {it.balance}</span>
-                                </div>
-                                <div style={{fontSize:'8px', color: colors.warning, marginTop:2}}>{t('FROM')}: {it.source} → {it.destination}</div>
-                              </div>
-                            )
-                          })}
-                        </div>
-                      )
-                    })}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                )
+                );
               })}
             </div>
           </div>
 
-          {/* log activity moved below building row */}
-          <div style={{ flex: 1.2, background: colors.bgSecondary, padding: 15, borderRadius: 12, borderLeft: `4px solid ${colors.primary}`, height: 'fit-content', marginTop: '20px' }}>
-            <h4 style={{textAlign:'center', color: colors.primary, marginTop:0, borderBottom:`1px solid ${colors.border}`, paddingBottom:10, fontSize:'12px'}}>{t('ACTIVITY_LOG')}</h4>
-            <div style={{maxHeight:'75vh', overflowY:'auto'}}>
-              {rawRecords.map((log, i) => {
-                  const isIn = log.qty_in > 0;
-                  return (
-                    <div key={i} style={{ padding: 10, marginBottom: 8, background: colors.bgTertiary, borderRadius: 8, border: `1px solid ${colors.border}`, position:'relative' }}>
-                      <div style={{ position:'absolute', top:8, right:8, fontSize:8, padding:'1px 5px', borderRadius:10, background: isIn? colors.success: colors.danger, color:'white', fontWeight:'bold' }}>
-                        {isIn ? t('IN_ENTRY').split('/')[0] : t('OUT_EXIT').split('/')[0]}
-                      </div>
-                      <div style={{fontSize:11, fontWeight:'bold', color: colors.primary}}>{log.spk_number}</div>
-                      <div style={{display:'flex', alignItems:'center', gap:4, fontSize:9, marginTop:5}}>
-                        <span style={{color: isIn? colors.success: colors.textMuted}}>{log.source_from || 'SF'}</span>
-                        <span>➜</span>
-                        <span style={{color: colors.danger, fontWeight:'bold'}}>{log.destination}</span>
-                      </div>
-                      <div style={{display:'flex', justifyContent:'space-between', marginTop:5, fontSize:9, color: colors.textMuted}}>
-                        <div>
-                          <b>{log.qty_in || log.qty_out} {t('PIECES')}</b>
-                          <div style={{fontSize:8, color: colors.textMuted}}>{t('OP')}: {log.operator}</div>
-                        </div>
-                        <span style={{fontSize: '8px'}}>{log.waktu_input}</span>
-                      </div>
+          {/* ── BOTTOM ROW: Activity Log full width ── */}
+          <div style={{ background: colors.bgSecondary, borderRadius: '16px', border: `1px solid ${colors.border}`, padding: '14px' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:10, paddingBottom:8, borderBottom:`1px solid ${colors.border}` }}>
+              <div style={{ width:3, height:14, borderRadius:2, background:`linear-gradient(to bottom,${colors.primary},${colors.blue})` }} />
+              <span style={{ fontSize:'11px', fontWeight:700, color:colors.text, letterSpacing:'0.5px', textTransform:'uppercase' }}>{t('ACTIVITY_LOG')}</span>
+              <span style={{ marginLeft:'auto', fontSize:9, color:colors.textMuted, background:colors.bgTertiary, padding:'1px 7px', borderRadius:20 }}>{rawRecords.length}</span>
+            </div>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(200px, 1fr))', gap:8, maxHeight:'22vh', overflowY:'auto' }}>
+              {rawRecords.map((log,i)=>{
+                const isIn = log.qty_in>0;
+                return (
+                  <div key={i} style={{ padding:'8px 10px', background:colors.bgTertiary, borderRadius:'9px', border:`1px solid ${colors.border}`, position:'relative' }}>
+                    <div style={{ position:'absolute', top:7, right:7, fontSize:7, padding:'2px 6px', borderRadius:20, background:isIn?colors.success:colors.danger, color:'#fff', fontWeight:700 }}>{isIn?'↓ IN':'↑ OUT'}</div>
+                    <div style={{ fontSize:11, fontWeight:700, color:colors.primary, marginBottom:3, paddingRight:32 }}>{log.spk_number}</div>
+                    <div style={{ display:'flex', alignItems:'center', gap:3, fontSize:9, marginBottom:3 }}>
+                      <span style={{ color:isIn?colors.success:colors.textMuted }}>{log.source_from||'SF'}</span>
+                      <span style={{ color:colors.textMuted }}>→</span>
+                      <span style={{ color:colors.danger, fontWeight:700 }}>{log.destination}</span>
                     </div>
-                  );
-                })}
+                    <div style={{ display:'flex', justifyContent:'space-between', fontSize:9 }}>
+                      <span style={{ color:colors.text, fontWeight:600 }}>{log.qty_in||log.qty_out} {t('PIECES')}</span>
+                      <span style={{ color:colors.textMuted, fontSize:8 }}>{log.waktu_input}</span>
+                    </div>
+                    <div style={{ fontSize:8, color:colors.textMuted, marginTop:2 }}>{t('OP')}: {log.operator}</div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
       )}
 
+      {/* ====== EXPORT MODAL ====== */}
       {showExportModal && (
-        <div style={s.overlay(colors)}>
-          <div style={s.card(colors)}>
-            <h3 style={{color: colors.primary}}>{t('DOWNLOAD_DATA')}</h3>
-            <div style={{display:'flex', flexDirection:'column', gap:10}}>
-               <button onClick={() => exportToXlsx(inventory, 'Summary_Stok')} style={{...s.btn(colors), background: colors.blue}}>{t('EXPORT_SUMMARY')}</button>
-               <button onClick={() => exportToXlsx(rawRecords, 'Log_Transaksi')} style={{...s.btn(colors), background: colors.purple}}>{t('EXPORT_LOG')}</button>
-               <button onClick={() => setShowExportModal(false)} style={{...s.btn(colors), background: colors.border}}>{t('CANCEL')}</button>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 10000 }}>
+          <div style={{ background: colors.bgSecondary, padding: '32px', borderRadius: '20px', textAlign: 'center', border: `1px solid ${colors.border}`, minWidth: 280, boxShadow: '0 25px 60px rgba(0,0,0,0.4)', animation: 'fadeSlideIn 0.25s ease' }}>
+            <div style={{ width: 48, height: 48, borderRadius: '14px', background: `linear-gradient(135deg, ${colors.blue}, ${colors.purple})`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, marginBottom: 16 }}>📊</div>
+            <h3 style={{ color: colors.text, margin: '0 0 20px', fontSize: '16px', fontWeight: 700 }}>{t('DOWNLOAD_DATA')}</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <button onClick={() => exportToXlsx(inventory, 'Summary_Stok')} className="sds-btn" style={{ justifyContent: 'center', background: colors.blue, boxShadow: `0 2px 12px ${colors.blueGlow}` }}>📋 {t('EXPORT_SUMMARY')}</button>
+              <button onClick={() => exportToXlsx(rawRecords, 'Log_Transaksi')} className="sds-btn" style={{ justifyContent: 'center', background: colors.purple, boxShadow: `0 2px 12px ${colors.purpleGlow}` }}>📜 {t('EXPORT_LOG')}</button>
+              <button onClick={() => setShowExportModal(false)} className="sds-btn" style={{ justifyContent: 'center', background: colors.bgTertiary, color: colors.textMuted, border: `1px solid ${colors.border}` }}>{t('CANCEL')}</button>
             </div>
           </div>
         </div>
@@ -1038,21 +1483,5 @@ function App() {
     </div>
   );
 }
-
-const s = {
-  darkInput: (colors) => ({ padding: '10px', borderRadius: '6px', border: `1px solid ${colors.border}`, background: colors.bgTertiary, color: colors.text, fontSize: '13px', outline: 'none' }),
-  btn: (colors) => ({ padding: '10px 15px', border: 'none', borderRadius: '6px', color: '#fff', fontWeight: 'bold', cursor: 'pointer' }),
-  overlay: (colors) => ({ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 10000 }),
-  card: (colors) => ({ background: colors.bgSecondary, padding: '30px', borderRadius: '12px', textAlign: 'center', border: `1px solid ${colors.border}` }),
-  modernStatCard: (colors) => ({ 
-    flex: 1, background: `linear-gradient(135deg, ${colors.bgSecondary} 0%, ${colors.bg} 100%)`, padding: '20px', 
-    borderRadius: '16px', border: `1px solid ${colors.border}`, position: 'relative', overflow: 'hidden'
-  }),
-  watermark: { position: 'absolute', right: '-10px', bottom: '-10px', fontSize: '60px', color: 'rgba(63,185,80,0.05)', fontWeight: '900' },
-  statLabel: (colors) => ({ fontSize: '11px', color: colors.textMuted, fontWeight: 'bold', letterSpacing: '1px' }),
-  statFlex: { display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '10px' },
-  statBigVal: { fontSize: '38px', fontWeight: '900' },
-  unit: { fontSize: '14px', opacity: 0.7 }
-};
 
 export default App;
