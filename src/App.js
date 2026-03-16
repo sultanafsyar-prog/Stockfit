@@ -940,7 +940,7 @@ function App() {
             }}
             onMouseEnter={e => e.currentTarget.style.transform='scale(1.1)'}
             onMouseLeave={e => e.currentTarget.style.transform='scale(1)'}
-          >+</button>
+          >✏️</button>
 
           {/* ── DRAWER OVERLAY ── */}
           {drawerOpen && (
@@ -1261,7 +1261,8 @@ function App() {
                         <div key={i} style={{ display:'flex', alignItems:'center', gap:5 }}>
                           <div style={{ width:8, height:8, borderRadius:2, background:d.color, flexShrink:0 }}/>
                           <span style={{ fontSize:9, color:colors.text, fontWeight:600, flex:1 }}>{d.label}</span>
-                          <span style={{ fontSize:9, color:d.color, fontWeight:700 }}>{Math.round(d.value/total*100)}%</span>
+                          <span style={{ fontSize:9, color:colors.textMuted, marginRight:4 }}>{d.value.toLocaleString()}</span>
+                          <span style={{ fontSize:9, color:d.color, fontWeight:700, minWidth:28, textAlign:'right' }}>{Math.round(d.value/total*100)}%</span>
                         </div>
                       ))}
                     </div>
