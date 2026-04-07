@@ -679,7 +679,7 @@ function App() {
       const inventoryWithBalance = Object.values(summary).map(item => ({
         ...item,
         balance: Math.max(0, (Number(item.target) || 0) - (Number(item.total_input) || 0))
-      })).filter(i => i.stock > 0);
+      })).filter(i => i.stock > 0 || i.balance > 0);
       setInventory(inventoryWithBalance);
     } catch (error) { console.error("Sync Error"); }
   }, [isLoggedIn]);
