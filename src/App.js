@@ -609,10 +609,19 @@ function App() {
   const [viewMode, setViewMode] = useState('ADMIN');
   const [inventory, setInventory] = useState([]);
   const [rawRecords, setRawRecords] = useState([]);
+  const [allTransactions, setAllTransactions] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [tvSearch, setTvSearch] = useState('');
   const [showExportModal, setShowExportModal] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const getDefaultDateRange = () => {
+    const to = new Date();
+    const from = new Date();
+    from.setDate(from.getDate() - 6);
+    const fmt = d => d.toISOString().split('T')[0];
+    return { from: fmt(from), to: fmt(to) };
+  };
+  const [exportDateRange, setExportDateRange] = useState(getDefaultDateRange);
   const [language, setLanguage] = useState(() => localStorage.getItem('language') || 'id');
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -641,9 +650,10 @@ function App() {
   const fetchData = useCallback(async () => {
     if (!isLoggedIn) return;
     try {
-      const res = await pb.collection('upper_stock').getList(1, 50, { sort: '-created', requestKey: null });
+      const res = await pb.collection('upper_stock').getList(1, 500, { sort: '-created', requestKey: null });
       setRawRecords(res.items);
       const allRecords = await pb.collection('upper_stock').getFullList({ sort: 'created', requestKey: null });
+      setAllTransactions(allRecords);
       const summary = allRecords.reduce((acc, curr) => {
         const key = `${curr.spk_number}-${curr.rack_location}`;
         if (!acc[key]) {
@@ -756,41 +766,123 @@ function App() {
 
   const exportToXlsx = (rows, fileName) => {
     if (fileName === 'Summary_Stok') {
-      const mapped = rows.map(r => ({
-        [t('SPK')]: r.spk || '',
-        [t('STYLE')]: r.style || '',
-        [t('RAK')]: r.rack || '',
-        [t('ORDER')]: r.target || r.order_qty || 0,
-        [t('TOTAL_IN')]: r.total_input || 0,
-        [t('TOTAL_OUT')]: r.total_output || 0,
-        [t('STOCK')]: r.stock || 0,
-        [t('BALANCE')]: r.balance !== undefined ? Math.max(0, r.balance) : Math.max(0, ((r.target || 0) - (r.total_input || 0))),
-        [t('XFD')]: r.xfd || '',
-        [t('SOURCE')]: r.source || '',
-        [t('DESTINATION')]: r.destination || '',
-        [t('OPERATOR')]: r.operator || pb.authStore.model.username
-      }));
+      // filter by date range using waktu_input from rawRecords cross-reference
+      const fromDate = exportDateRange.from ? new Date(exportDateRange.from) : null;
+      const toDate = exportDateRange.to ? new Date(exportDateRange.to + 'T23:59:59') : null;
+
+      // Get set of SPKs that had activity in date range
+      const activeSpks = new Set(
+        rawRecords.filter(r => {
+          if (!fromDate && !toDate) return true;
+          if (!r.waktu_input) return false;
+          // waktu_input format: "DD-M-YYYY HH:MM"
+          const parts = r.waktu_input.split(' ')[0].split('-');
+          if (parts.length < 3) return false;
+          const recDate = new Date(`${parts[2]}-${String(parts[1]).padStart(2,'0')}-${String(parts[0]).padStart(2,'0')}`);
+          if (fromDate && recDate < fromDate) return false;
+          if (toDate && recDate > toDate) return false;
+          return true;
+        }).map(r => r.spk_number)
+      );
+
+      const filtered = rows.filter(r => !fromDate && !toDate ? true : activeSpks.has(r.spk));
+
+      // Get latest operator for each SPK from rawRecords
+      const spkOperatorMap = {};
+      rawRecords.forEach(r => { spkOperatorMap[r.spk_number] = r.operator || pb.authStore.model.username; });
+
+      // Helper: parse "DD-M-YYYY HH:MM" → Date
+      const parseWaktuDate = (w) => {
+        if (!w) return null;
+        const parts = w.split(' ')[0].split('-');
+        if (parts.length < 3) return null;
+        return new Date(`${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`);
+      };
+
+      // Hitung tanggal balance=0 dan stock=0 per SPK+rack
+      // Replay semua transaksi secara kronologis per key
+      const zeroDateMap = {}; // key → { tglBalance0, tglStock0 }
+      const spkKeys = filtered.map(r => `${r.spk}-${r.rack}`);
+      spkKeys.forEach(key => {
+        const [spk, rack] = key.split(/-(.+)/); // split on first dash only... 
+        // ambil semua transaksi untuk SPK+rack ini, sudah sorted by created (asc)
+        const txs = allTransactions.filter(r => r.spk_number === spk && r.rack_location === rack);
+        let runningInput = 0, runningOutput = 0, runningTarget = 0;
+        let tglBalance0 = null, tglStock0 = null;
+        txs.forEach(tx => {
+          runningInput  += Number(tx.qty_in  || 0);
+          runningOutput += Number(tx.qty_out || 0);
+          if (Number(tx.target_qty) > 0) runningTarget = Number(tx.target_qty);
+          const runningStock   = runningInput - runningOutput;
+          const runningBalance = Math.max(0, runningTarget - runningInput);
+          const tgl = parseWaktuDate(tx.waktu_input);
+          if (runningBalance === 0 && !tglBalance0 && tgl) tglBalance0 = tgl.toISOString().split('T')[0];
+          if (runningStock   === 0 && !tglStock0   && tgl) tglStock0   = tgl.toISOString().split('T')[0];
+        });
+        zeroDateMap[key] = { tglBalance0, tglStock0 };
+      });
+
+      const mapped = filtered.map(r => {
+        const key = `${r.spk}-${r.rack}`;
+        const { tglBalance0, tglStock0 } = zeroDateMap[key] || {};
+        return {
+          [t('SPK')]: r.spk || '',
+          [t('STYLE')]: r.style || '',
+          [t('RAK')]: r.rack || '',
+          [t('ORDER')]: r.target || r.order_qty || 0,
+          [t('TOTAL_IN')]: r.total_input || 0,
+          [t('TOTAL_OUT')]: r.total_output || 0,
+          [t('STOCK')]: r.stock || 0,
+          [t('BALANCE')]: r.balance !== undefined ? Math.max(0, r.balance) : Math.max(0, ((r.target || 0) - (r.total_input || 0))),
+          'Tgl Balance 0': tglBalance0 || '-',
+          'Tgl Stock 0':   tglStock0   || '-',
+          [t('XFD')]: r.xfd || '',
+          [t('SOURCE')]: r.source || '',
+          [t('DESTINATION')]: r.destination || '',
+          [t('OPERATOR')]: spkOperatorMap[r.spk] || pb.authStore.model.username,
+        };
+      });
       const ws = XLSX.utils.json_to_sheet(mapped);
+      // Auto column width
+      const colWidths = Object.keys(mapped[0] || {}).map(k => ({ wch: Math.max(k.length, 12) }));
+      ws['!cols'] = colWidths;
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, 'Summary');
-      XLSX.writeFile(wb, `${fileName}.xlsx`);
+      const label = exportDateRange.from && exportDateRange.to ? `_${exportDateRange.from}_sd_${exportDateRange.to}` : '';
+      XLSX.writeFile(wb, `${fileName}${label}.xlsx`);
       return;
     }
-    const processedRows = rows.map(row => ({
+    // Export Log — filter by date range
+    const fromDate = exportDateRange.from ? new Date(exportDateRange.from) : null;
+    const toDate = exportDateRange.to ? new Date(exportDateRange.to + 'T23:59:59') : null;
+
+    const filteredRows = rows.filter(r => {
+      if (!fromDate && !toDate) return true;
+      if (!r.waktu_input) return false;
+      const parts = r.waktu_input.split(' ')[0].split('-');
+      if (parts.length < 3) return false;
+      const recDate = new Date(`${parts[2]}-${String(parts[1]).padStart(2,'0')}-${String(parts[0]).padStart(2,'0')}`);
+      if (fromDate && recDate < fromDate) return false;
+      if (toDate && recDate > toDate) return false;
+      return true;
+    });
+
+    const processedRows = filteredRows.map(row => ({
       Tanggal: row.waktu_input ? row.waktu_input.split(' ')[0] : '',
       Waktu: row.waktu_input ? row.waktu_input.split(' ')[1] : '',
       ...row,
       operator: row.operator || pb.authStore.model.username
     }));
-    const filteredRows = processedRows.map(row => {
+    const cleanRows = processedRows.map(row => {
       const { collectionId, collectionName, waktu_input, ...rest } = row;
       if (rest.target_qty !== undefined) { rest.order_qty = rest.target_qty; delete rest.target_qty; }
       return rest;
     });
-    const ws = XLSX.utils.json_to_sheet(filteredRows);
+    const ws = XLSX.utils.json_to_sheet(cleanRows);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Data');
-    XLSX.writeFile(wb, `${fileName}.xlsx`);
+    const label = exportDateRange.from && exportDateRange.to ? `_${exportDateRange.from}_sd_${exportDateRange.to}` : '';
+    XLSX.writeFile(wb, `${fileName}${label}.xlsx`);
   };
 
   // ========================
@@ -1171,98 +1263,92 @@ function App() {
         /* ====== TV MODE ====== */
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
 
-          {/* ── 3 TIMEZONE CLOCKS ── */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
-            {[
-              { label: '🇮🇩  INDONESIA', tz: 'Asia/Jakarta', locale: 'id-ID', color: colors.primary, glow: colors.primaryGlow },
-              { label: '🇬🇧  UNITED KINGDOM', tz: 'Europe/London', locale: 'en-GB', color: colors.warning, glow: colors.warningGlow },
-              { label: '🇹🇼  TAIWAN', tz: 'Asia/Taipei', locale: 'zh-TW', color: colors.success, glow: colors.successGlow },
-            ].map(({ label, tz, locale, color, glow }) => (
-              <div key={tz} style={{ background: colors.bgSecondary, border: `1px solid ${colors.border}`, borderRadius: '16px', padding: '16px 20px', textAlign: 'center', position: 'relative', overflow: 'hidden', boxShadow: `0 4px 24px ${glow}` }}>
-                {/* subtle bg glow blob */}
-                <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(ellipse at center, ${glow} 0%, transparent 70%)`, pointerEvents: 'none' }} />
-                <div style={{ fontSize: '10px', fontWeight: 700, color: color, letterSpacing: '2px', textTransform: 'uppercase', marginBottom: 6, opacity: 0.9 }}>{label}</div>
-                <div style={{ fontSize: '36px', fontWeight: 900, fontFamily: "'JetBrains Mono', monospace", color: color, letterSpacing: '2px', lineHeight: 1, textShadow: `0 0 20px ${glow}` }}>
-                  {currentTime.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: tz })}
-                </div>
-                <div style={{ fontSize: '10px', color: colors.textMuted, marginTop: 6, letterSpacing: '1px' }}>
-                  {currentTime.toLocaleDateString(locale, { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric', timeZone: tz })}
-                </div>
+          {/* ── SINGLE INDONESIA CLOCK ── */}
+          <div style={{ background: colors.bgSecondary, border: `1px solid ${colors.border}`, borderRadius: '16px', padding: '14px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative', overflow: 'hidden', boxShadow: `0 4px 20px ${colors.primaryGlow}` }}>
+            <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(ellipse at 30% 50%, ${colors.primaryGlow} 0%, transparent 65%)`, pointerEvents: 'none' }} />
+            <div>
+              <div style={{ fontSize: '10px', fontWeight: 800, color: colors.primary, letterSpacing: '3px', textTransform: 'uppercase', marginBottom: 4, opacity: 0.9 }}>🇮🇩 &nbsp;INDONESIA — WIB</div>
+              <div style={{ fontSize: '14px', color: colors.textMuted, letterSpacing: '1px' }}>
+                {currentTime.toLocaleDateString('id-ID', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric', timeZone: 'Asia/Jakarta' })}
               </div>
-            ))}
+            </div>
+            <div style={{ fontSize: '44px', fontWeight: 900, fontFamily: "'JetBrains Mono', monospace", color: colors.primary, letterSpacing: '3px', lineHeight: 1, textShadow: `0 0 20px ${colors.primaryGlow}` }}>
+              {currentTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'Asia/Jakarta' })}
+            </div>
           </div>
 
-          {/* ── TOP ROW: Stats + Pie Chart + Line Chart ── */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1.6fr 1.8fr', gap: '12px', alignItems: 'stretch' }}>
-
+          {/* ── STATS ROW ── */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
             {/* ENTRY */}
-            <div style={{ background: colors.bgSecondary, borderRadius: '14px', padding: '14px 16px', border: `1px solid ${colors.border}`, position: 'relative', overflow: 'hidden', boxShadow: `0 4px 20px ${colors.successGlow}` }}>
-              <div style={{ position: 'absolute', right: -8, top: -8, fontSize: 60, fontWeight: 900, color: colors.success, opacity: 0.04, lineHeight: 1, pointerEvents: 'none' }}>IN</div>
-              <div style={{ fontSize: '9px', fontWeight: 700, color: colors.success, letterSpacing: '2px', textTransform: 'uppercase', marginBottom: 6 }}>{t('ENTRY_TODAY')}</div>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-                <span style={{ fontSize: 34, fontWeight: 900, color: colors.success, fontFamily: "'JetBrains Mono', monospace", lineHeight: 1 }}>{entryToday}</span>
-                <span style={{ fontSize: 11, color: colors.textMuted }}>{t('PIECE')}</span>
+            <div style={{ background: colors.bgSecondary, borderRadius: '16px', padding: '20px 24px', border: `1px solid ${colors.border}`, position: 'relative', overflow: 'hidden', boxShadow: `0 4px 20px ${colors.successGlow}` }}>
+              <div style={{ position: 'absolute', right: -10, top: -10, fontSize: 80, fontWeight: 900, color: colors.success, opacity: 0.04, lineHeight: 1, pointerEvents: 'none' }}>IN</div>
+              <div style={{ fontSize: '10px', fontWeight: 700, color: colors.success, letterSpacing: '2px', textTransform: 'uppercase', marginBottom: 8 }}>{t('ENTRY_TODAY')}</div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                <span style={{ fontSize: 48, fontWeight: 900, color: colors.success, fontFamily: "'JetBrains Mono', monospace", lineHeight: 1 }}>{entryToday.toLocaleString()}</span>
+                <span style={{ fontSize: 13, color: colors.textMuted }}>{t('PIECE')}</span>
               </div>
             </div>
-
             {/* EXIT */}
-            <div style={{ background: colors.bgSecondary, borderRadius: '14px', padding: '14px 16px', border: `1px solid ${colors.border}`, position: 'relative', overflow: 'hidden', boxShadow: `0 4px 20px ${colors.dangerGlow}` }}>
-              <div style={{ position: 'absolute', right: -8, top: -8, fontSize: 60, fontWeight: 900, color: colors.danger, opacity: 0.04, lineHeight: 1, pointerEvents: 'none' }}>OUT</div>
-              <div style={{ fontSize: '9px', fontWeight: 700, color: colors.danger, letterSpacing: '2px', textTransform: 'uppercase', marginBottom: 6 }}>{t('EXIT_TODAY')}</div>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-                <span style={{ fontSize: 34, fontWeight: 900, color: colors.danger, fontFamily: "'JetBrains Mono', monospace", lineHeight: 1 }}>{exitToday}</span>
-                <span style={{ fontSize: 11, color: colors.textMuted }}>{t('PIECE')}</span>
+            <div style={{ background: colors.bgSecondary, borderRadius: '16px', padding: '20px 24px', border: `1px solid ${colors.border}`, position: 'relative', overflow: 'hidden', boxShadow: `0 4px 20px ${colors.dangerGlow}` }}>
+              <div style={{ position: 'absolute', right: -10, top: -10, fontSize: 80, fontWeight: 900, color: colors.danger, opacity: 0.04, lineHeight: 1, pointerEvents: 'none' }}>OUT</div>
+              <div style={{ fontSize: '10px', fontWeight: 700, color: colors.danger, letterSpacing: '2px', textTransform: 'uppercase', marginBottom: 8 }}>{t('EXIT_TODAY')}</div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                <span style={{ fontSize: 48, fontWeight: 900, color: colors.danger, fontFamily: "'JetBrains Mono', monospace", lineHeight: 1 }}>{exitToday.toLocaleString()}</span>
+                <span style={{ fontSize: 13, color: colors.textMuted }}>{t('PIECE')}</span>
               </div>
             </div>
-
             {/* GLOBAL STOCK */}
-            <div style={{ background: `linear-gradient(135deg, ${colors.blue}18, ${colors.primary}0a)`, borderRadius: '14px', padding: '14px 16px', border: `1px solid ${colors.primary}44`, position: 'relative', overflow: 'hidden', boxShadow: `0 4px 20px ${colors.blueGlow}` }}>
-              <div style={{ position: 'absolute', right: -8, top: -8, fontSize: 44, fontWeight: 900, color: colors.primary, opacity: 0.04, lineHeight: 1, pointerEvents: 'none' }}>STK</div>
-              <div style={{ fontSize: '9px', fontWeight: 700, color: colors.primary, letterSpacing: '2px', textTransform: 'uppercase', marginBottom: 6 }}>{t('GLOBAL_STOCK')}</div>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-                <span style={{ fontSize: 34, fontWeight: 900, color: colors.primary, fontFamily: "'JetBrains Mono', monospace", lineHeight: 1 }}>{globalStock}</span>
-                <span style={{ fontSize: 11, color: colors.textMuted }}>{t('PIECE')}</span>
+            <div style={{ background: `linear-gradient(135deg, ${colors.blue}18, ${colors.primary}0a)`, borderRadius: '16px', padding: '20px 24px', border: `1px solid ${colors.primary}44`, position: 'relative', overflow: 'hidden', boxShadow: `0 4px 20px ${colors.blueGlow}` }}>
+              <div style={{ position: 'absolute', right: -10, top: -10, fontSize: 60, fontWeight: 900, color: colors.primary, opacity: 0.04, lineHeight: 1, pointerEvents: 'none' }}>STK</div>
+              <div style={{ fontSize: '10px', fontWeight: 700, color: colors.primary, letterSpacing: '2px', textTransform: 'uppercase', marginBottom: 8 }}>{t('GLOBAL_STOCK')}</div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                <span style={{ fontSize: 48, fontWeight: 900, color: colors.primary, fontFamily: "'JetBrains Mono', monospace", lineHeight: 1 }}>{globalStock.toLocaleString()}</span>
+                <span style={{ fontSize: 13, color: colors.textMuted }}>{t('PIECE')}</span>
               </div>
             </div>
+          </div>
 
-            {/* PIE CHART */}
+          {/* ── CHARTS ROW: Donut (bigger) + Line Chart ── */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr', gap: '12px' }}>
+
+            {/* DONUT CHART — lebih besar */}
             {(() => {
-              const buildingData = HURUF_RAK.map(h=>({
+              const buildingData = HURUF_RAK.map(h => ({
                 label: `${t('BLDG')} ${h}`,
-                value: inventory.filter(i=>i.rack.startsWith(h)).reduce((a,b)=>a+b.stock,0),
-                color: [colors.primary,colors.success,colors.warning,colors.danger,colors.purple,colors.blue][HURUF_RAK.indexOf(h)%6]
-              })).filter(d=>d.value>0);
-              const total = buildingData.reduce((a,b)=>a+b.value,0);
-              let startAngle = -Math.PI/2;
-              const cx=75,cy=70,r=55;
-              const slices = buildingData.map(d=>{
-                const angle=(d.value/total)*2*Math.PI;
-                const x1=cx+r*Math.cos(startAngle),y1=cy+r*Math.sin(startAngle);
-                startAngle+=angle;
-                const x2=cx+r*Math.cos(startAngle),y2=cy+r*Math.sin(startAngle);
-                const large=angle>Math.PI?1:0;
-                return {...d, path:`M${cx},${cy} L${x1.toFixed(2)},${y1.toFixed(2)} A${r},${r},0,${large},1,${x2.toFixed(2)},${y2.toFixed(2)} Z`};
+                value: inventory.filter(i => i.rack.startsWith(h)).reduce((a, b) => a + b.stock, 0),
+                color: [colors.primary, colors.success, colors.warning, colors.danger, colors.purple, colors.blue][HURUF_RAK.indexOf(h) % 6]
+              })).filter(d => d.value > 0);
+              const total = buildingData.reduce((a, b) => a + b.value, 0);
+              let startAngle = -Math.PI / 2;
+              const cx = 120, cy = 120, r = 95, rInner = 50;
+              const slices = buildingData.map(d => {
+                const angle = (d.value / total) * 2 * Math.PI;
+                const x1 = cx + r * Math.cos(startAngle), y1 = cy + r * Math.sin(startAngle);
+                startAngle += angle;
+                const x2 = cx + r * Math.cos(startAngle), y2 = cy + r * Math.sin(startAngle);
+                const large = angle > Math.PI ? 1 : 0;
+                return { ...d, path: `M${cx},${cy} L${x1.toFixed(2)},${y1.toFixed(2)} A${r},${r},0,${large},1,${x2.toFixed(2)},${y2.toFixed(2)} Z` };
               });
               return (
-                <div style={{ background:colors.bgSecondary, borderRadius:'14px', border:`1px solid ${colors.border}`, padding:'12px 14px', overflow:'hidden' }}>
-                  <div style={{ display:'flex', alignItems:'center', gap:7, marginBottom:8, paddingBottom:7, borderBottom:`1px solid ${colors.border}` }}>
-                    <div style={{ width:3, height:13, borderRadius:2, background:`linear-gradient(to bottom,${colors.purple},${colors.primary})` }}/>
-                    <span style={{ fontSize:'10px', fontWeight:700, color:colors.text, letterSpacing:'0.5px', textTransform:'uppercase' }}>{t('DIST_STOCK_BUILDING')}</span>
+                <div style={{ background: colors.bgSecondary, borderRadius: '16px', border: `1px solid ${colors.border}`, padding: '18px 20px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 14, paddingBottom: 10, borderBottom: `1px solid ${colors.border}` }}>
+                    <div style={{ width: 3, height: 16, borderRadius: 2, background: `linear-gradient(to bottom,${colors.purple},${colors.primary})` }} />
+                    <span style={{ fontSize: '12px', fontWeight: 800, color: colors.text, letterSpacing: '0.5px', textTransform: 'uppercase' }}>{t('DIST_STOCK_BUILDING')}</span>
                   </div>
-                  <div style={{ display:'flex', gap:10, alignItems:'center' }}>
-                    <svg width="150" height="140" style={{ flexShrink:0 }}>
-                      {slices.map((s,i)=><path key={i} d={s.path} fill={s.color} stroke={colors.bgSecondary} strokeWidth="2" opacity="0.9"/>)}
-                      <circle cx={cx} cy={cy} r={r*0.42} fill={colors.bgSecondary}/>
-                      <text x={cx} y={cy-5} textAnchor="middle" fontSize="9" fontWeight="800" fill={colors.textMuted}>{t('TOTAL')}</text>
-                      <text x={cx} y={cy+9} textAnchor="middle" fontSize="11" fontWeight="900" fill={colors.primary}>{total.toLocaleString()}</text>
+                  <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                    <svg width="240" height="240" style={{ flexShrink: 0 }}>
+                      {slices.map((s, i) => <path key={i} d={s.path} fill={s.color} stroke={colors.bgSecondary} strokeWidth="2.5" opacity="0.92" />)}
+                      <circle cx={cx} cy={cy} r={rInner} fill={colors.bgSecondary} />
+                      <text x={cx} y={cy - 10} textAnchor="middle" fontSize="11" fontWeight="700" fill={colors.textMuted}>{t('TOTAL')}</text>
+                      <text x={cx} y={cy + 10} textAnchor="middle" fontSize="18" fontWeight="900" fill={colors.primary}>{total.toLocaleString()}</text>
                     </svg>
-                    <div style={{ flex:1, display:'flex', flexDirection:'column', gap:4 }}>
-                      {buildingData.map((d,i)=>(
-                        <div key={i} style={{ display:'flex', alignItems:'center', gap:5 }}>
-                          <div style={{ width:8, height:8, borderRadius:2, background:d.color, flexShrink:0 }}/>
-                          <span style={{ fontSize:9, color:colors.text, fontWeight:600, flex:1 }}>{d.label}</span>
-                          <span style={{ fontSize:9, color:colors.textMuted, marginRight:4 }}>{d.value.toLocaleString()}</span>
-                          <span style={{ fontSize:9, color:d.color, fontWeight:700, minWidth:28, textAlign:'right' }}>{Math.round(d.value/total*100)}%</span>
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {buildingData.map((d, i) => (
+                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderRadius: 8, background: colors.bgTertiary, border: `1px solid ${colors.border}` }}>
+                          <div style={{ width: 12, height: 12, borderRadius: 3, background: d.color, flexShrink: 0 }} />
+                          <span style={{ fontSize: 12, color: colors.text, fontWeight: 700, flex: 1 }}>{d.label}</span>
+                          <span style={{ fontSize: 13, color: colors.textMuted, fontFamily: "'JetBrains Mono',monospace", fontWeight: 600 }}>{d.value.toLocaleString()}</span>
+                          <span style={{ fontSize: 13, color: d.color, fontWeight: 800, minWidth: 38, textAlign: 'right' }}>{Math.round(d.value / total * 100)}%</span>
                         </div>
                       ))}
                     </div>
@@ -1271,79 +1357,124 @@ function App() {
               );
             })()}
 
-            {/* LINE CHART */}
+            {/* LINE CHART + ACTIVITY LOG — dalam 1 panel */}
             {(() => {
-              const days=[];
-              const dayLabels=[];
-              for(let i=6;i>=0;i--){
-                const d=new Date();
-                d.setDate(d.getDate()-i);
-                // format DD-M-YYYY to match waktu_input stored format
-                const dd=String(d.getDate()).padStart(2,'0');
-                const mm=String(d.getMonth()+1);
-                const yyyy=d.getFullYear();
-                days.push(`${dd}-${mm}-${yyyy}`);
-                dayLabels.push(`${dd}-${String(d.getMonth()+1).padStart(2,'0')}`);
+              // ── Key fix: normalisasi waktu_input "DD-M-YYYY HH:MM" → key "YYYY-MM-DD"
+              // supaya bisa dibandingkan apapun format bulannya (1 digit atau 2 digit)
+              const toDateKey = (w) => {
+                if (!w) return null;
+                const parts = w.split(' ')[0].split('-'); // ["07","4","2026"]
+                if (parts.length < 3) return null;
+                const dd = parts[0].padStart(2, '0');
+                const mm = parts[1].padStart(2, '0');
+                const yyyy = parts[2];
+                return `${yyyy}-${mm}-${dd}`; // "2026-04-07"
+              };
+              const days = [];
+              const dayLabels = [];
+              for (let i = 6; i >= 0; i--) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                days.push(d.toISOString().split('T')[0]); // "2026-04-07"
+                dayLabels.push(`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`);
               }
-              const inData=days.map(day=>rawRecords.filter(r=>r.qty_in>0&&(r.waktu_input||'').startsWith(day)).reduce((a,b)=>a+Number(b.qty_in),0));
-              const outData=days.map(day=>rawRecords.filter(r=>r.qty_out>0&&(r.waktu_input||'').startsWith(day)).reduce((a,b)=>a+Number(b.qty_out),0));
-              const maxVal=Math.max(...inData,...outData,1);
-              const W=320,H=140,padL=32,padB=20,padT=14,chartW=W-padL-10,chartH=H-padB-padT;
-              const xStep=chartW/(days.length-1);
-              const toY=v=>padT+chartH-(v/maxVal)*chartH;
-              const toX=i=>padL+i*xStep;
-              const inPath=days.map((_,i)=>`${i===0?'M':'L'}${toX(i).toFixed(1)},${toY(inData[i]).toFixed(1)}`).join(' ');
-              const outPath=days.map((_,i)=>`${i===0?'M':'L'}${toX(i).toFixed(1)},${toY(outData[i]).toFixed(1)}`).join(' ');
-              const inArea=inPath+` L${toX(6).toFixed(1)},${(padT+chartH).toFixed(1)} L${padL},${(padT+chartH).toFixed(1)} Z`;
-              const outArea=outPath+` L${toX(6).toFixed(1)},${(padT+chartH).toFixed(1)} L${padL},${(padT+chartH).toFixed(1)} Z`;
+              const inData  = days.map(day => rawRecords.filter(r => r.qty_in  > 0 && toDateKey(r.waktu_input) === day).reduce((a,b) => a + Number(b.qty_in),  0));
+              const outData = days.map(day => rawRecords.filter(r => r.qty_out > 0 && toDateKey(r.waktu_input) === day).reduce((a,b) => a + Number(b.qty_out), 0));
+              const maxVal = Math.max(...inData, ...outData, 1);
+              const W = 460, H = 180, padL = 42, padB = 26, padT = 16, chartW = W - padL - 12, chartH = H - padB - padT;
+              const xStep = chartW / (days.length - 1);
+              const toY = v => padT + chartH - (v / maxVal) * chartH;
+              const toX = i => padL + i * xStep;
+              const inPath   = days.map((_,i) => `${i===0?'M':'L'}${toX(i).toFixed(1)},${toY(inData[i]).toFixed(1)}`).join(' ');
+              const outPath  = days.map((_,i) => `${i===0?'M':'L'}${toX(i).toFixed(1)},${toY(outData[i]).toFixed(1)}`).join(' ');
+              const inArea   = inPath  + ` L${toX(6).toFixed(1)},${(padT+chartH).toFixed(1)} L${padL},${(padT+chartH).toFixed(1)} Z`;
+              const outArea  = outPath + ` L${toX(6).toFixed(1)},${(padT+chartH).toFixed(1)} L${padL},${(padT+chartH).toFixed(1)} Z`;
               return (
-                <div style={{ background:colors.bgSecondary, borderRadius:'14px', border:`1px solid ${colors.border}`, padding:'12px 14px', overflow:'hidden' }}>
-                  <div style={{ display:'flex', alignItems:'center', gap:7, marginBottom:8, paddingBottom:7, borderBottom:`1px solid ${colors.border}` }}>
-                    <div style={{ width:3, height:13, borderRadius:2, background:`linear-gradient(to bottom,${colors.success},${colors.warning})` }}/>
-                    <span style={{ fontSize:'10px', fontWeight:700, color:colors.text, letterSpacing:'0.5px', textTransform:'uppercase' }}>{t('TREND_IN_OUT')}</span>
-                    <div style={{ marginLeft:'auto', display:'flex', gap:8 }}>
-                      <span style={{ fontSize:8, color:colors.success, fontWeight:700 }}>● IN</span>
-                      <span style={{ fontSize:8, color:colors.danger, fontWeight:700 }}>● OUT</span>
+                <div style={{ background: colors.bgSecondary, borderRadius: '16px', border: `1px solid ${colors.border}`, padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {/* Header */}
+                  <div style={{ display:'flex', alignItems:'center', gap:7, paddingBottom:10, borderBottom:`1px solid ${colors.border}` }}>
+                    <div style={{ width:3, height:16, borderRadius:2, background:`linear-gradient(to bottom,${colors.success},${colors.warning})` }} />
+                    <span style={{ fontSize:'12px', fontWeight:800, color:colors.text, letterSpacing:'0.5px', textTransform:'uppercase' }}>{t('TREND_IN_OUT')}</span>
+                    <div style={{ marginLeft:'auto', display:'flex', gap:12 }}>
+                      <span style={{ fontSize:10, color:colors.success, fontWeight:700 }}>● IN</span>
+                      <span style={{ fontSize:10, color:colors.danger,  fontWeight:700 }}>● OUT</span>
                     </div>
                   </div>
+
+                  {/* Chart */}
                   <svg width={W} height={H} style={{ width:'100%', height:'auto' }}>
-                    {/* Y-axis grid lines + labels */}
-                    {[0,0.5,1].map(f=>(
+                    <defs>
+                      <linearGradient id="inGrad2"  x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%"   stopColor={colors.success} stopOpacity="0.3"/>
+                        <stop offset="100%" stopColor={colors.success} stopOpacity="0.02"/>
+                      </linearGradient>
+                      <linearGradient id="outGrad2" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%"   stopColor={colors.danger}  stopOpacity="0.25"/>
+                        <stop offset="100%" stopColor={colors.danger}   stopOpacity="0.02"/>
+                      </linearGradient>
+                    </defs>
+                    {[0, 0.25, 0.5, 0.75, 1].map(f => (
                       <g key={f}>
-                        <line x1={padL} y1={toY(maxVal*f)} x2={padL+chartW} y2={toY(maxVal*f)} stroke={colors.border} strokeWidth="0.5"/>
-                        <text x={padL-2} y={toY(maxVal*f)+3} textAnchor="end" fontSize="7" fill={colors.textMuted}>{Math.round(maxVal*f)}</text>
+                        <line x1={padL} y1={toY(maxVal*f)} x2={padL+chartW} y2={toY(maxVal*f)} stroke={colors.border} strokeWidth="0.6" strokeDasharray="4 3"/>
+                        <text x={padL-4} y={toY(maxVal*f)+3} textAnchor="end" fontSize="9" fill={colors.textMuted}>{Math.round(maxVal*f).toLocaleString()}</text>
                       </g>
                     ))}
-                    <path d={inArea} fill={colors.success} opacity="0.08"/>
-                    <path d={outArea} fill={colors.danger} opacity="0.08"/>
-                    <path d={inPath} fill="none" stroke={colors.success} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round"/>
-                    <path d={outPath} fill="none" stroke={colors.danger} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round"/>
-                    {days.map((_,i)=>(
+                    <path d={inArea}  fill="url(#inGrad2)"/>
+                    <path d={outArea} fill="url(#outGrad2)"/>
+                    <path d={inPath}  fill="none" stroke={colors.success} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round"/>
+                    <path d={outPath} fill="none" stroke={colors.danger}  strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round"/>
+                    {days.map((_,i) => (
                       <g key={i}>
-                        {/* IN dot + value label */}
-                        {inData[i]>0&&<>
-                          <circle cx={toX(i)} cy={toY(inData[i])} r="3.5" fill={colors.success}/>
-                          <text x={toX(i)} y={toY(inData[i])-6} textAnchor="middle" fontSize="8" fontWeight="700" fill={colors.success}>{inData[i]}</text>
+                        {inData[i]>0 && <>
+                          <circle cx={toX(i)} cy={toY(inData[i])} r="4" fill={colors.success}/>
+                          <text x={toX(i)} y={toY(inData[i])-8} textAnchor="middle" fontSize="9" fontWeight="700" fill={colors.success}>{inData[i].toLocaleString()}</text>
                         </>}
-                        {/* OUT dot + value label */}
-                        {outData[i]>0&&<>
-                          <circle cx={toX(i)} cy={toY(outData[i])} r="3.5" fill={colors.danger}/>
-                          <text x={toX(i)} y={toY(outData[i])+13} textAnchor="middle" fontSize="8" fontWeight="700" fill={colors.danger}>{outData[i]}</text>
+                        {outData[i]>0 && <>
+                          <circle cx={toX(i)} cy={toY(outData[i])} r="4" fill={colors.danger}/>
+                          <text x={toX(i)} y={toY(outData[i])+15} textAnchor="middle" fontSize="9" fontWeight="700" fill={colors.danger}>{outData[i].toLocaleString()}</text>
                         </>}
-                        {/* X-axis date label */}
-                        <text x={toX(i)} y={H-3} textAnchor="middle" fontSize="7" fill={colors.textMuted}>{dayLabels[i]}</text>
+                        <text x={toX(i)} y={H-4} textAnchor="middle" fontSize="9" fill={colors.textMuted}>{dayLabels[i]}</text>
                       </g>
                     ))}
                   </svg>
+
+                  {/* ── ACTIVITY LOG di bawah chart, sama panel ── */}
+                  <div style={{ borderTop:`1px solid ${colors.border}`, paddingTop:10 }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:8 }}>
+                      <div style={{ width:3, height:13, borderRadius:2, background:`linear-gradient(to bottom,${colors.primary},${colors.blue})` }}/>
+                      <span style={{ fontSize:'11px', fontWeight:800, color:colors.text, letterSpacing:'0.5px', textTransform:'uppercase' }}>{t('ACTIVITY_LOG')}</span>
+                      <span style={{ fontSize:9, color:colors.textMuted, background:colors.bgTertiary, padding:'1px 8px', borderRadius:20, border:`1px solid ${colors.border}` }}>{rawRecords.length} transaksi</span>
+                    </div>
+                    <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(200px, 1fr))', gap:6, maxHeight:'180px', overflowY:'auto' }}>
+                      {rawRecords.slice(0, 20).map((log, i) => {
+                        const isIn = log.qty_in > 0;
+                        return (
+                          <div key={i} style={{ padding:'8px 10px', background:colors.bgTertiary, borderRadius:'9px', border:`1px solid ${isIn?colors.success+'44':colors.danger+'44'}`, display:'flex', flexDirection:'column', gap:3, position:'relative' }}>
+                            <div style={{ position:'absolute', top:6, right:6, fontSize:8, padding:'2px 7px', borderRadius:20, background:isIn?colors.success:colors.danger, color:'#fff', fontWeight:800 }}>{isIn?'↓ IN':'↑ OUT'}</div>
+                            <div style={{ fontSize:11, fontWeight:800, color:colors.primary, paddingRight:44 }}>{log.spk_number}</div>
+                            <div style={{ display:'flex', alignItems:'center', gap:3, fontSize:9 }}>
+                              <span style={{ color:isIn?colors.success:colors.textMuted, fontWeight:600 }}>{log.source_from||'—'}</span>
+                              <span style={{ color:colors.textMuted }}>→</span>
+                              <span style={{ color:colors.warning, fontWeight:700 }}>{log.destination||'—'}</span>
+                            </div>
+                            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                              <span style={{ fontSize:12, fontWeight:800, color:isIn?colors.success:colors.danger, fontFamily:"'JetBrains Mono',monospace" }}>{(log.qty_in||log.qty_out||0).toLocaleString()} <span style={{ fontSize:8, fontWeight:400, color:colors.textMuted }}>{t('PIECES')}</span></span>
+                              <span style={{ fontSize:8, color:colors.textMuted }}>{log.waktu_input}</span>
+                            </div>
+                            <div style={{ fontSize:8, color:colors.textMuted }}>👤 {log.operator}</div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
               );
             })()}
-
           </div>
 
           {/* ── SEARCH ── */}
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 4 }}>
-            <div style={{ position: 'relative', width: '36%' }}>
+            <div style={{ position: 'relative', width: '40%' }}>
               <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 14, color: colors.textMuted, pointerEvents: 'none' }}>🔍</span>
               <input style={{ ...inputStyle, paddingLeft: 36, textAlign: 'center' }} placeholder={t('SEARCH_DISPLAY')} value={tvSearch} onChange={e => setTvSearch(e.target.value)} {...inputFocusProps} />
             </div>
@@ -1435,44 +1566,49 @@ function App() {
             </div>
           </div>
 
-          {/* ── BOTTOM ROW: Activity Log full width ── */}
-          <div style={{ background: colors.bgSecondary, borderRadius: '16px', border: `1px solid ${colors.border}`, padding: '14px' }}>
-            <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:10, paddingBottom:8, borderBottom:`1px solid ${colors.border}` }}>
-              <div style={{ width:3, height:14, borderRadius:2, background:`linear-gradient(to bottom,${colors.primary},${colors.blue})` }} />
-              <span style={{ fontSize:'11px', fontWeight:700, color:colors.text, letterSpacing:'0.5px', textTransform:'uppercase' }}>{t('ACTIVITY_LOG')}</span>
-              <span style={{ marginLeft:'auto', fontSize:9, color:colors.textMuted, background:colors.bgTertiary, padding:'1px 7px', borderRadius:20 }}>{rawRecords.length}</span>
-            </div>
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(200px, 1fr))', gap:8, maxHeight:'22vh', overflowY:'auto' }}>
-              {rawRecords.map((log,i)=>{
-                const isIn = log.qty_in>0;
-                return (
-                  <div key={i} style={{ padding:'8px 10px', background:colors.bgTertiary, borderRadius:'9px', border:`1px solid ${colors.border}`, position:'relative' }}>
-                    <div style={{ position:'absolute', top:7, right:7, fontSize:7, padding:'2px 6px', borderRadius:20, background:isIn?colors.success:colors.danger, color:'#fff', fontWeight:700 }}>{isIn?'↓ IN':'↑ OUT'}</div>
-                    <div style={{ fontSize:11, fontWeight:700, color:colors.primary, marginBottom:3, paddingRight:32 }}>{log.spk_number}</div>
-                    <div style={{ display:'flex', alignItems:'center', gap:3, fontSize:9, marginBottom:3 }}>
-                      <span style={{ color:isIn?colors.success:colors.textMuted }}>{log.source_from||'SF'}</span>
-                      <span style={{ color:colors.textMuted }}>→</span>
-                      <span style={{ color:colors.danger, fontWeight:700 }}>{log.destination}</span>
-                    </div>
-                    <div style={{ display:'flex', justifyContent:'space-between', fontSize:9 }}>
-                      <span style={{ color:colors.text, fontWeight:600 }}>{log.qty_in||log.qty_out} {t('PIECES')}</span>
-                      <span style={{ color:colors.textMuted, fontSize:8 }}>{log.waktu_input}</span>
-                    </div>
-                    <div style={{ fontSize:8, color:colors.textMuted, marginTop:2 }}>{t('OP')}: {log.operator}</div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
         </div>
       )}
 
       {/* ====== EXPORT MODAL ====== */}
       {showExportModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 10000 }}>
-          <div style={{ background: colors.bgSecondary, padding: '32px', borderRadius: '20px', textAlign: 'center', border: `1px solid ${colors.border}`, minWidth: 280, boxShadow: '0 25px 60px rgba(0,0,0,0.4)', animation: 'fadeSlideIn 0.25s ease' }}>
+          <div style={{ background: colors.bgSecondary, padding: '32px', borderRadius: '20px', border: `1px solid ${colors.border}`, minWidth: 320, boxShadow: '0 25px 60px rgba(0,0,0,0.4)', animation: 'fadeSlideIn 0.25s ease' }}>
             <div style={{ width: 48, height: 48, borderRadius: '14px', background: `linear-gradient(135deg, ${colors.blue}, ${colors.purple})`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, marginBottom: 16 }}>📊</div>
-            <h3 style={{ color: colors.text, margin: '0 0 20px', fontSize: '16px', fontWeight: 700 }}>{t('DOWNLOAD_DATA')}</h3>
+            <h3 style={{ color: colors.text, margin: '0 0 6px', fontSize: '16px', fontWeight: 700 }}>{t('DOWNLOAD_DATA')}</h3>
+
+            {/* Date Range Filter */}
+            <div style={{ background: colors.bgTertiary, border: `1px solid ${colors.border}`, borderRadius: 12, padding: '14px', marginBottom: 16 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: colors.textMuted, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 10 }}>📅 Filter Tanggal (maks. 7 hari)</div>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ fontSize: 10, color: colors.textMuted, display: 'block', marginBottom: 4 }}>Dari</label>
+                  <input type="date" style={{ ...inputStyle, fontSize: 12, padding: '8px 10px', colorScheme: theme === 'dark' ? 'dark' : 'light' }}
+                    value={exportDateRange.from}
+                    onChange={e => {
+                      const from = e.target.value;
+                      // auto-set "to" max 7 days after from
+                      const fromD = new Date(from);
+                      const toD = new Date(exportDateRange.to);
+                      const diff = Math.round((toD - fromD) / 86400000);
+                      const newTo = diff > 6 ? new Date(fromD.getTime() + 6 * 86400000).toISOString().split('T')[0] : exportDateRange.to;
+                      setExportDateRange({ from, to: newTo });
+                    }} />
+                </div>
+                <span style={{ color: colors.textMuted, marginTop: 16 }}>—</span>
+                <div style={{ flex: 1 }}>
+                  <label style={{ fontSize: 10, color: colors.textMuted, display: 'block', marginBottom: 4 }}>Sampai</label>
+                  <input type="date" style={{ ...inputStyle, fontSize: 12, padding: '8px 10px', colorScheme: theme === 'dark' ? 'dark' : 'light' }}
+                    value={exportDateRange.to}
+                    min={exportDateRange.from}
+                    max={(() => { const d = new Date(exportDateRange.from); d.setDate(d.getDate() + 6); return d.toISOString().split('T')[0]; })()}
+                    onChange={e => setExportDateRange({ ...exportDateRange, to: e.target.value })} />
+                </div>
+              </div>
+              <div style={{ marginTop: 8, fontSize: 10, color: colors.primary, textAlign: 'center' }}>
+                {exportDateRange.from && exportDateRange.to && `${exportDateRange.from} s/d ${exportDateRange.to}`}
+              </div>
+            </div>
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <button onClick={() => exportToXlsx(inventory, 'Summary_Stok')} className="sds-btn" style={{ justifyContent: 'center', background: colors.blue, boxShadow: `0 2px 12px ${colors.blueGlow}` }}>📋 {t('EXPORT_SUMMARY')}</button>
               <button onClick={() => exportToXlsx(rawRecords, 'Log_Transaksi')} className="sds-btn" style={{ justifyContent: 'center', background: colors.purple, boxShadow: `0 2px 12px ${colors.purpleGlow}` }}>📜 {t('EXPORT_LOG')}</button>
